@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -12,9 +15,6 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/mapping"
 )
-
-var fileCSV = "/Users/shun/code/magpie-dict/resource/data/EP21Outfile.csv"
-var fileIndex = "/Users/shun/code/magpie-dict/tmp/index.bleve"
 
 var indexData *bleve.Index = nil
 var recordData *[][]string = nil
@@ -81,7 +81,7 @@ func search(index *bleve.Index, s *string) *[]string {
 	return &result
 }
 
-func getRecordData() *[][]string {
+func getRecordData(fileCSV string) *[][]string {
 	csvfile, _ := os.Open(fileCSV)
 	data := csv.NewReader(csvfile)
 
@@ -99,7 +99,7 @@ func getRecordData() *[][]string {
 
 func indexRecordData(file string, data *[][]string) *bleve.Index {
 	fmt.Print("Checking for indexes...")
-	index, err := bleve.Open(fileIndex)
+	index, err := bleve.Open(file)
 	if err == nil {
 		fmt.Println("found!")
 		return &index
@@ -108,7 +108,7 @@ func indexRecordData(file string, data *[][]string) *bleve.Index {
 
 	fmt.Println("Indexing...")
 	mapping := getMapping()
-	index, err = bleve.New(fileIndex, mapping)
+	index, err = bleve.New(file, mapping)
 	if err != nil {
 		panic(err)
 	}
@@ -127,10 +127,37 @@ func getMapping() *mapping.IndexMappingImpl {
 }
 
 func main() {
-	recordData = getRecordData()
-	indexData = indexRecordData(fileIndex, recordData)
+	args := os.Args[1:]
+	configFile := args[0]
 
-	http.Handle("/", http.FileServer(http.Dir("/Users/shun/code/magpie-dict/static")))
+	jsonFile, err := os.Open(configFile)
+	if err != nil {
+		fmt.Printf("Cannt read config file. %s\n", configFile)
+		fmt.Println(err)
+		return
+	}
+
+	bytes, _ := ioutil.ReadAll(jsonFile)
+	jsonFile.Close()
+
+	var result map[string]interface{}
+	json.Unmarshal([]byte(bytes), &result)
+
+	rootPath := result["rootPath"].(string)
+	indexPath := result["indexPath"].(string)
+
+	dataPath := filepath.Join(rootPath, "resource", "data", "EP21Outfile.csv")
+	htmlPath := filepath.Join(rootPath, "static")
+
+	fmt.Println("dataPath: " + dataPath)
+	fmt.Println("htmlPath: " + htmlPath)
+	fmt.Println("indexPath: " + indexPath)
+	fmt.Println()
+
+	recordData = getRecordData(dataPath)
+	indexData = indexRecordData(indexPath, recordData)
+
+	http.Handle("/", http.FileServer(http.Dir(htmlPath)))
 	http.HandleFunc("/search", searchHandler)
 
 	port := 8090
