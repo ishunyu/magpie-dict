@@ -20,18 +20,11 @@
         xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
-                results = this.responseText.split("#");
-                text = "<table>";
-                results.forEach(row => {
-                    text += "<tr>";
-                    row.split(";").forEach(col => {
-                        text += "<td>" + col + "</td>";
-                    })
-                    text += "</tr>";
-                });
-                text += "</table>";
-                console.log(text)
-                document.getElementById("results").innerHTML = text;
+                results = JSON.parse(this.responseText)
+                view = createView(results.data)
+                
+                console.log(view)
+                document.getElementById("results").innerHTML = view;
             }
         };
         xhttp.open("GET", "search?searchText="+searchTerm, true);
@@ -42,6 +35,55 @@
         if (event.key === 'Enter') {
             search();
         }
+    }
+
+    function createView(data) {
+        tables = ""
+        for (const d of data) {
+            tables += createRecordContext(d) + "</br></br>";
+        }
+        return tables
+    }
+
+    function createRecordContext(recordCtx) {
+        rows = ""
+        if (recordCtx.pre) {
+            rows += createRecordView(recordCtx.pre)
+        }
+        rows += createRecordView(recordCtx.sub)
+        if (recordCtx.post) {
+            rows += createRecordView(recordCtx.post)
+        }
+        return table(rows)
+    }
+
+    function createRecordView(record) {
+        cols = ""
+        cols += col(record.a.start)
+        cols += col(record.a.end)
+        cols += col(record.a.text)
+
+        cols += col(record.b.start)
+        cols += col(record.b.end)
+        cols += col(record.b.text)
+
+        return row(cols)
+    }
+
+    function table(rows) {
+        return wrap("table", rows)
+    }
+
+    function row(cols) {
+        return wrap("tr", cols)
+    }
+
+    function col(text) {
+        return wrap("td", text)
+    }
+
+    function wrap(tag, toWrap) {
+        return "<" + tag + ">" + toWrap + "</" + tag + ">"
     }
 </script>
 
