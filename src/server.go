@@ -7,39 +7,51 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/mapping"
 )
 
-var fileA = ""
 var fileCSV = "/Users/shun/code/magpie-dict/resource/data/EP21Outfile.csv"
 var fileIndex = "/Users/shun/code/magpie-dict/tmp/index.bleve"
 
-var indexAll *bleve.Index = nil
-var recordsAll *[][]string = nil
+var indexData *bleve.Index = nil
+var recordData *[][]string = nil
+
+type bleveRecord struct {
+	Index string
+	AText string
+	BText string
+}
 
 func searchHandler(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+
 	searchText := req.FormValue("searchText")
-	fmt.Printf("searching... %s\n", searchText)
+	fmt.Print(searchText)
 
-	results := search(indexAll, &searchText)
+	searchResults := search(indexData, &searchText)
+	if searchResults == nil {
+		fmt.Println()
+		return
+	}
+
+	results := findResults(searchResults)
 	if results == nil {
+		fmt.Println()
 		return
 	}
 
-	textResults := matchTextResults(results)
-	if textResults == nil {
-		return
-	}
-
-	for _, rec := range *textResults {
+	for _, rec := range *results {
 		t := strings.Join(rec[1:], ";")
 		fmt.Fprint(w, t+"#")
 	}
+	elapsed := time.Since(start)
+	fmt.Printf(" %s\n", elapsed)
 }
 
-func matchTextResults(results *[]string) *[][]string {
+func findResults(results *[]string) *[][]string {
 	if results == nil {
 		return nil
 	}
@@ -47,12 +59,29 @@ func matchTextResults(results *[]string) *[][]string {
 	textResults := make([][]string, len(*results))
 	for i, result := range *results {
 		x, _ := strconv.Atoi(result)
-		textResults[i] = (*recordsAll)[x]
+		textResults[i] = (*recordData)[x]
 	}
 	return &textResults
 }
 
-func data() *[][]string {
+func search(index *bleve.Index, s *string) *[]string {
+	query := bleve.NewQueryStringQuery(*s)
+	searchRequest := bleve.NewSearchRequest(query)
+	searchResult, _ := (*index).Search(searchRequest)
+
+	hits := len(searchResult.Hits)
+	if hits == 0 {
+		return nil
+	}
+
+	result := make([]string, hits)
+	for i, match := range searchResult.Hits {
+		result[i] = (*match).ID
+	}
+	return &result
+}
+
+func getRecordData() *[][]string {
 	csvfile, _ := os.Open(fileCSV)
 	data := csv.NewReader(csvfile)
 
@@ -68,59 +97,38 @@ func data() *[][]string {
 	return &indexedRecords
 }
 
-type Record struct {
-	Index string
-	AText string
-	BText string
-}
-
-func indexRecords(records *[][]string) *bleve.Index {
+func indexRecordData(file string, data *[][]string) *bleve.Index {
+	fmt.Print("Checking for indexes...")
 	index, err := bleve.Open(fileIndex)
 	if err == nil {
+		fmt.Println("found!")
 		return &index
 	}
+	fmt.Println("not found :(")
 
-	mapping := indexMapping()
+	fmt.Println("Indexing...")
+	mapping := getMapping()
 	index, err = bleve.New(fileIndex, mapping)
 	if err != nil {
 		panic(err)
 	}
 
-	for _, r := range *records {
-		message := Record{r[0], r[3], r[6]}
+	for _, r := range *data {
+		message := bleveRecord{r[0], r[3], r[6]}
 		fmt.Println(message)
 		index.Index(message.Index, message)
 	}
 	return &index
 }
 
-func indexMapping() *mapping.IndexMappingImpl {
+func getMapping() *mapping.IndexMappingImpl {
 	mapping := bleve.NewIndexMapping()
 	return mapping
 }
 
-func search(index *bleve.Index, s *string) *[]string {
-	query := bleve.NewQueryStringQuery(*s)
-	searchRequest := bleve.NewSearchRequest(query)
-	searchResult, _ := (*index).Search(searchRequest)
-
-	// fmt.Printf("searchResult: %s", searchResult)
-
-	hits := len(searchResult.Hits)
-	if hits == 0 {
-		return nil
-	}
-
-	result := make([]string, hits)
-	for i, match := range searchResult.Hits {
-		result[i] = (*match).ID
-	}
-	return &result
-}
-
 func main() {
-	recordsAll = data()
-	indexAll = indexRecords(recordsAll)
+	recordData = getRecordData()
+	indexData = indexRecordData(fileIndex, recordData)
 
 	http.Handle("/", http.FileServer(http.Dir("/Users/shun/code/magpie-dict/static")))
 	http.HandleFunc("/search", searchHandler)
