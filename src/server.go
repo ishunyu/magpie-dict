@@ -128,13 +128,17 @@ func getMapping() *mapping.IndexMappingImpl {
 
 func main() {
 	args := os.Args[1:]
+	if len(args) == 0 {
+		fmt.Println("Missing configuration file argument.")
+		os.Exit(1)
+	}
+
 	configFile := args[0]
 
 	jsonFile, err := os.Open(configFile)
 	if err != nil {
-		fmt.Printf("Cannt read config file. %s\n", configFile)
 		fmt.Println(err)
-		return
+		os.Exit(1)
 	}
 
 	bytes, _ := ioutil.ReadAll(jsonFile)
