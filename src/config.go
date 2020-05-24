@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"encoding/json"
+	"os"
 	"path/filepath"
 )
 
@@ -15,8 +15,14 @@ type Config struct {
 }
 
 // GetConfig returns config data based in json
-func GetConfig(configPath string) *Config {
-	jsonFile, err := os.Open(configPath)
+func GetConfig() *Config {
+	args := os.Args[1:]
+	if len(args) == 0 {
+		fmt.Println("Missing configuration file argument.")
+		os.Exit(1)
+	}
+
+	jsonFile, err := os.Open(args[0])
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

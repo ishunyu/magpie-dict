@@ -22,7 +22,7 @@ type Line struct {
 }
 
 type Record struct {
-	ID int `json:"id"`
+	ID int  `json:"id"`
 	A  Line `json:"a"`
 	B  Line `json:"b"`
 }
@@ -63,7 +63,6 @@ func (index *Index) Search(searchText string) []*Record {
 		}
 	}
 
-	// fmt.Printf("Hits: %v\n", hitIds)
 	return index.getResults(hitIds)
 }
 
