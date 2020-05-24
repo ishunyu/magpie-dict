@@ -1,168 +1,88 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
-
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/mapping"
 )
 
-var indexData *bleve.Index = nil
-var recordData *[][]string = nil
-
-type bleveRecord struct {
-	Index string
-	AText string
-	BText string
+type searchResult struct {
+	Data []*searchRecord `json:"data"`
 }
 
-func searchHandler(w http.ResponseWriter, req *http.Request) {
+type searchRecord struct {
+	Sub  *Record `json:"sub"`
+	Pre  *Record `json:"pre"`
+	Post *Record `json:"post"`
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func (index *Index) getRecordContext(record *Record) *searchRecord {
+	pre := index.GetRecord(record.ID - 1)
+	post := index.GetRecord(record.ID + 1)
+
+	return &searchRecord{Pre: pre, Sub: record, Post: post}
+}
+
+func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 	start := time.Now()
 
 	searchText := req.FormValue("searchText")
-	fmt.Print(searchText)
+	logMessage := searchText
 
-	searchResults := search(indexData, &searchText)
-	if searchResults == nil {
-		fmt.Println()
+	records := index.Search(searchText)
+	if records == nil {
+		logMessage += " (No results)"
+		fmt.Println(logMessage)
 		return
 	}
 
-	results := findResults(searchResults)
-	if results == nil {
-		fmt.Println()
-		return
+	records = records[0:min(len(records), 5)]
+	result := searchResult{make([]*searchRecord, len(records))}
+	for i, rec := range records {
+		result.Data[i] = index.getRecordContext(rec)
 	}
 
-	for _, rec := range *results {
-		t := strings.Join(rec[1:], ";")
-		fmt.Fprint(w, t+"#")
-	}
+	data, _ := json.Marshal(result)
+	fmt.Fprintf(w, string(data))
+
 	elapsed := time.Since(start)
-	fmt.Printf(" %s\n", elapsed)
+	logMessage += fmt.Sprintf(" %s", elapsed)
+
+	fmt.Println(logMessage)
 }
 
-func findResults(results *[]string) *[][]string {
-	if results == nil {
-		return nil
+func getSearchHandler(index *Index) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		handleSearch(w, req, index)
 	}
-
-	textResults := make([][]string, len(*results))
-	for i, result := range *results {
-		x, _ := strconv.Atoi(result)
-		textResults[i] = (*recordData)[x]
-	}
-	return &textResults
 }
 
-func search(index *bleve.Index, s *string) *[]string {
-	query := bleve.NewQueryStringQuery(*s)
-	searchRequest := bleve.NewSearchRequest(query)
-	searchResult, _ := (*index).Search(searchRequest)
-
-	hits := len(searchResult.Hits)
-	if hits == 0 {
-		return nil
-	}
-
-	result := make([]string, hits)
-	for i, match := range searchResult.Hits {
-		result[i] = (*match).ID
-	}
-	return &result
-}
-
-func getRecordData(fileCSV string) *[][]string {
-	csvfile, _ := os.Open(fileCSV)
-	data := csv.NewReader(csvfile)
-
-	records, _ := data.ReadAll()
-	indexedRecords := make([][]string, len(records))
-	for i, r := range records {
-		newRecord := make([]string, 1, len(r))
-		newRecord[0] = strconv.Itoa(i)
-		newRecord = append(newRecord, r...)
-
-		indexedRecords[i] = newRecord
-	}
-	return &indexedRecords
-}
-
-func indexRecordData(file string, data *[][]string) *bleve.Index {
-	fmt.Print("Checking for indexes...")
-	index, err := bleve.Open(file)
-	if err == nil {
-		fmt.Println("found!")
-		return &index
-	}
-	fmt.Println("not found :(")
-
-	fmt.Println("Indexing...")
-	mapping := getMapping()
-	index, err = bleve.New(file, mapping)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, r := range *data {
-		message := bleveRecord{r[0], r[3], r[6]}
-		fmt.Println(message)
-		index.Index(message.Index, message)
-	}
-	return &index
-}
-
-func getMapping() *mapping.IndexMappingImpl {
-	mapping := bleve.NewIndexMapping()
-	return mapping
-}
-
-func main() {
+func getConfig() *Config {
 	args := os.Args[1:]
 	if len(args) == 0 {
 		fmt.Println("Missing configuration file argument.")
 		os.Exit(1)
 	}
 
-	configFile := args[0]
+	configPath := args[0]
+	return GetConfig(configPath)
+}
 
-	jsonFile, err := os.Open(configFile)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+func main() {
+	config := getConfig()
+	index := GetIndex(config)
 
-	bytes, _ := ioutil.ReadAll(jsonFile)
-	jsonFile.Close()
-
-	var result map[string]interface{}
-	json.Unmarshal([]byte(bytes), &result)
-
-	rootPath := result["rootPath"].(string)
-	indexPath := result["indexPath"].(string)
-
-	dataPath := filepath.Join(rootPath, "resource", "data", "EP21Outfile.csv")
-	htmlDir := filepath.Join(rootPath, "static")
-
-	fmt.Println("dataPath: " + dataPath)
-	fmt.Println("indexPath: " + indexPath)
-	fmt.Println("htmlDir: " + htmlDir)
-	fmt.Println()
-
-	recordData = getRecordData(dataPath)
-	indexData = indexRecordData(indexPath, recordData)
-
-	http.Handle("/", http.FileServer(http.Dir(htmlDir)))
-	http.HandleFunc("/search", searchHandler)
+	http.Handle("/", http.FileServer(http.Dir(config.GetHtmlDir())))
+	http.HandleFunc("/search", getSearchHandler(index))
 
 	port := 8090
 	fmt.Printf("Starting server on localhost:%v\n", port)
