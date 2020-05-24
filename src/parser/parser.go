@@ -2,11 +2,12 @@ package parser
 
 import (
 	"fmt"
-	"github.com/ishunyu/magpie-dict/subtitle"
 	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ishunyu/magpie-dict/src/subtitle"
 )
 
 var regex = regexp.MustCompile(`\s*(\d+:\d{2}:\d{2}.\d{3}),(\d+:\d{2}:\d{2}.\d{3})`)

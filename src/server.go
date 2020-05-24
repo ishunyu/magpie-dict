@@ -147,20 +147,20 @@ func main() {
 	indexPath := result["indexPath"].(string)
 
 	dataPath := filepath.Join(rootPath, "resource", "data", "EP21Outfile.csv")
-	htmlPath := filepath.Join(rootPath, "static")
+	htmlDir := filepath.Join(rootPath, "static")
 
 	fmt.Println("dataPath: " + dataPath)
-	fmt.Println("htmlPath: " + htmlPath)
 	fmt.Println("indexPath: " + indexPath)
+	fmt.Println("htmlDir: " + htmlDir)
 	fmt.Println()
 
 	recordData = getRecordData(dataPath)
 	indexData = indexRecordData(indexPath, recordData)
 
-	http.Handle("/", http.FileServer(http.Dir(htmlPath)))
+	http.Handle("/", http.FileServer(http.Dir(htmlDir)))
 	http.HandleFunc("/search", searchHandler)
 
 	port := 8090
-	fmt.Printf("Starting server on port %v...\n", port)
+	fmt.Printf("Starting server on localhost:%v\n", port)
 	http.ListenAndServe(fmt.Sprint("localhost:", port), nil)
 }
