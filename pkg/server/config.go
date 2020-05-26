@@ -10,6 +10,7 @@ import (
 
 // Config used for storing app configuration
 type Config struct {
+	Port int `json:port`
 	RootPath  string `json:"rootPath"`
 	IndexPath string `json:"indexPath"`
 }
@@ -44,4 +45,11 @@ func (config *Config) GetDataPath() string {
 
 func (config *Config) GetHtmlDir() string {
 	return filepath.Join(config.RootPath, "static")
+}
+
+func (config *Config) GetPort() int {
+	if config.Port == 0 {
+		return 8090
+	}
+	return config.Port
 }
