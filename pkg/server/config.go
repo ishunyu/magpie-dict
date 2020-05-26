@@ -10,6 +10,7 @@ import (
 
 // Config used for storing app configuration
 type Config struct {
+	Hostname string `json:hostname`
 	Port int `json:port`
 	RootPath  string `json:"rootPath"`
 	IndexPath string `json:"indexPath"`
