@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/mapping"
@@ -54,15 +55,15 @@ func (index *Index) Search(searchText string) [][]int {
 }
 
 func indexData(indexPath string, data *Data) *bleve.Index {
-	fmt.Print("Checking for indexes...")
 	bIndex, err := bleve.Open(indexPath)
 	if err == nil {
-		fmt.Println("found!")
+		fmt.Println("Index found!")
 		return &bIndex
 	}
-	fmt.Println("not found :(")
+	fmt.Println("Index found not found!")
 
-	fmt.Println("Indexing...")
+	fmt.Println("Indexing started")
+	start := time.Now()
 	mapping := getNewMapping()
 	bIndex, err = bleve.New(indexPath, mapping)
 	if err != nil {
@@ -75,6 +76,8 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 		bIndex.Index(bMessage.ID, bMessage)
 	})
 
+	elapsed := time.Since(start)
+	fmt.Printf("Indexing completed! (%v)\n", elapsed)
 	return &bIndex
 }
 

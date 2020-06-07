@@ -31,6 +31,11 @@
         td.text {
             width: 30%;
         }
+
+        div.metadata {
+            width: 1000px;
+            text-align: right;
+        }
     </style>
 </head>
 
@@ -68,21 +73,28 @@
     }
 
     function createView(data) {
-        tables = ""
+        views = ""
         for (const d of data) {
-            tables += createRecordContext(d) + "</br></br>";
+            views += createRecordContext(d.subs);
+            views += createMetadataView(d.show, d.episode)
+            views += "</br></br>"
         }
-        return tables
+        return views
     }
 
-    function createRecordContext(recordCtx) {
+    function createMetadataView(show, episode) {
+        view = wrap("div", show + " " + episode, "class=metadata")
+        return view
+    }
+
+    function createRecordContext(subs) {
         rows = ""
-        if (recordCtx.pre) {
-            rows += createRecordView(recordCtx.pre)
+        if (subs.pre) {
+            rows += createRecordView(subs.pre)
         }
-        rows += createRecordView(recordCtx.sub)
-        if (recordCtx.post) {
-            rows += createRecordView(recordCtx.post)
+        rows += createRecordView(subs.sub)
+        if (subs.post) {
+            rows += createRecordView(subs.post)
         }
         return table(rows)
     }

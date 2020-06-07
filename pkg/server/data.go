@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Line struct {
@@ -49,7 +50,6 @@ func GetData(dataPath string) Data {
 			return nil
 		}
 
-		fmt.Println("Parsing show " + showPath)
 		shows = append(shows, getShow(showPath))
 		return nil
 	})
@@ -57,9 +57,12 @@ func GetData(dataPath string) Data {
 }
 
 func getShow(showPath string) Show {
+	fmt.Print("Loading show data: " + showPath)
+
 	manifestPath := filepath.Join(showPath, "manifest.json")
 	manifestFile, err := os.Open(manifestPath)
 	if err != nil {
+		fmt.Println()
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -69,7 +72,7 @@ func getShow(showPath string) Show {
 	var manifestData manifest
 	json.Unmarshal(bytes, &manifestData)
 	title := manifestData.Title
-	fmt.Println(showPath + " title: " + title)
+	fmt.Println(", title: " + title)
 
 	return Show{title, getRecordFiles(filepath.Join(showPath, "data"))}
 }
@@ -81,7 +84,6 @@ func getRecordFiles(filesPath string) []Showfile {
 			return nil
 		}
 
-		fmt.Println("Parsing file " + filePath)
 		files = append(files, getRecordFile(filePath))
 		return nil
 	})
@@ -110,16 +112,20 @@ func getRecords(fileCSV string) []Record {
 	return records
 }
 
-func (data *Data) WalkRecords(function WalkFunc) {
-	for i, show := range data.Shows {
-		fmt.Printf("Walking show %v\n", show.Title)
-		for j, file := range show.Files {
-			fmt.Printf("Walking file %v...", file.Name)
+func (data *Data) WalkRecords(f WalkFunc) {
+	for showId, show := range data.Shows {
+		fmt.Printf("Indexing %v\n", show.Title)
+		start := time.Now()
+		for fileId, file := range show.Files {
+			fmt.Printf("Indexing episode %v... ", file.Name)
+			startFile := time.Now()
 			for _, record := range file.Records {
-				function(i, j, record)
+				f(showId, fileId, record)
 			}
-			fmt.Println("done")
+			elapsedFile := time.Since(startFile)
+			fmt.Printf("(%v)\n", elapsedFile)
 		}
-		fmt.Printf("Finished %v\n", show.Title)
+		elapsed := time.Since(start)
+		fmt.Printf("Finished %v (%v)\n", show.Title, elapsed)
 	}
 }

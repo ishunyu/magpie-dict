@@ -35,7 +35,7 @@ func GetConfig() *Config {
 	var config Config
 	json.Unmarshal([]byte(bytes), &config)
 
-	fmt.Printf("%+v\n", config)
+	fmt.Printf("config: %+v\n", config)
 
 	return &config
 }
