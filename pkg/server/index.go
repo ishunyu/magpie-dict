@@ -50,7 +50,6 @@ func (index *Index) Search(searchText string) []*Record {
 
 	hits := len(searchResult.Hits)
 	if hits == 0 {
-		fmt.Println("Zero hits")
 		return nil
 	}
 
