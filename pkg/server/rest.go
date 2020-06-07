@@ -8,10 +8,16 @@ import (
 )
 
 type searchResult struct {
-	Data []*searchRecord `json:"data"`
+	Data []*searchData `json:"data"`
 }
 
-type searchRecord struct {
+type searchData struct {
+	Show    string      `json:"show"`
+	Episode string      `json:"episode"`
+	Subs    *searchSubs `json:"subs"`
+}
+
+type searchSubs struct {
 	Sub  *Record `json:"sub"`
 	Pre  *Record `json:"pre"`
 	Post *Record `json:"post"`
@@ -29,17 +35,17 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 	searchText := req.FormValue("searchText")
 	logMessage := searchText
 
-	records := index.Search(searchText)
-	if records == nil {
+	hitsIds := index.Search(searchText)
+	if hitsIds == nil {
 		logMessage += " (No results)"
 		fmt.Println(logMessage)
-		records = make([]*Record, 0)
+		hitsIds = make([][]int, 0)
 	}
 
-	records = records[0:Min(len(records), 5)]
-	result := searchResult{make([]*searchRecord, len(records))}
-	for i, rec := range records {
-		result.Data[i] = index.getRecordContext(rec)
+	hitsIds = hitsIds[0:Min(len(hitsIds), 5)]
+	result := searchResult{make([]*searchData, len(hitsIds))}
+	for i, ids := range hitsIds {
+		result.Data[i] = retreiveResults(&index.Data, ids)
 	}
 
 	data, _ := json.Marshal(result)
@@ -51,9 +57,30 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 	fmt.Println(logMessage)
 }
 
-func (index *Index) getRecordContext(record *Record) *searchRecord {
-	pre := index.GetRecord(record.ID - 1)
-	post := index.GetRecord(record.ID + 1)
+func retreiveResults(data *Data, ids []int) *searchData {
+	if ids == nil {
+		return nil
+	}
 
-	return &searchRecord{Pre: pre, Sub: record, Post: post}
+	showId, fileId, id := ids[0], ids[1], ids[2]
+	show := data.Shows[showId]
+	file := show.Files[fileId]
+	subs := retreiveRecordContext(&file, id)
+
+	return &searchData{show.Title, file.Name, subs}
+}
+
+func retreiveRecordContext(file *Showfile, id int) *searchSubs {
+	pre := GetRecord(file, id-1)
+	sub := GetRecord(file, id)
+	post := GetRecord(file, id+1)
+
+	return &searchSubs{Pre: pre, Sub: sub, Post: post}
+}
+
+func GetRecord(file *Showfile, id int) *Record {
+	if id < 0 || id >= len(file.Records) {
+		return nil
+	}
+	return &file.Records[id]
 }

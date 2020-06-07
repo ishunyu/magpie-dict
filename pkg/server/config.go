@@ -10,8 +10,8 @@ import (
 
 // Config used for storing app configuration
 type Config struct {
-	Hostname string `json:hostname`
-	Port int `json:port`
+	Hostname  string `json:hostname`
+	Port      int    `json:port`
 	RootPath  string `json:"rootPath"`
 	IndexPath string `json:"indexPath"`
 }
@@ -41,7 +41,7 @@ func GetConfig() *Config {
 }
 
 func (config *Config) GetDataPath() string {
-	return filepath.Join(config.RootPath, "resource", "data", "EP21Outfile.csv")
+	return filepath.Join(config.RootPath, "resource", "data")
 }
 
 func (config *Config) GetHtmlDir() string {

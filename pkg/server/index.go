@@ -1,45 +1,32 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
-	"os"
 	"strconv"
+	"strings"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/mapping"
 )
 
 type Index struct {
-	Records []Record
-	BIndex  *bleve.Index
+	Data   Data
+	BIndex *bleve.Index
 }
 
-type Line struct {
-	Start string `json:"start"`
-	End   string `json:"end"`
-	Text  string `json:"text"`
-}
-
-type Record struct {
-	ID int  `json:"id"`
-	A  Line `json:"a"`
-	B  Line `json:"b"`
-}
-
-type bRecord struct {
+type message struct {
 	ID    string
 	AText string
 	BText string
 }
 
 func GetIndex(config *Config) *Index {
-	records := getRecords(config.GetDataPath())
-	index := indexRecords(config.IndexPath, records)
-	return &Index{records, index}
+	data := GetData(config.GetDataPath())
+	index := indexData(config.IndexPath, &data)
+	return &Index{data, index}
 }
 
-func (index *Index) Search(searchText string) []*Record {
+func (index *Index) Search(searchText string) [][]int {
 	query := bleve.NewQueryStringQuery(searchText)
 	searchRequest := bleve.NewSearchRequest(query)
 	searchResult, err := (*index.BIndex).Search(searchRequest)
@@ -53,54 +40,20 @@ func (index *Index) Search(searchText string) []*Record {
 		return nil
 	}
 
-	hitIds := make([]int, hits)
+	hitsIds := make([][]int, hits)
 	for i, match := range searchResult.Hits {
-		hitIds[i], err = strconv.Atoi((*match).ID)
-		if err != nil {
-			fmt.Println(err)
-			return nil
+		parts := strings.Split(match.ID, ".")
+		nums := make([]int, len(parts))
+		for j, s := range parts {
+			nums[j], _ = strconv.Atoi(s)
 		}
+		hitsIds[i] = nums
 	}
 
-	return index.getResults(hitIds)
+	return hitsIds
 }
 
-func (index *Index) GetRecord(id int) *Record {
-	if id < 0 || id >= len(index.Records) {
-		return nil
-	}
-	return &index.Records[id]
-}
-
-func (index *Index) getResults(hitIds []int) []*Record {
-	if hitIds == nil {
-		return nil
-	}
-
-	results := make([]*Record, len(hitIds))
-	for i, id := range hitIds {
-		results[i] = &(index.Records)[id]
-	}
-	return results
-}
-
-func getRecords(fileCSV string) []Record {
-	csvfile, _ := os.Open(fileCSV)
-	data := csv.NewReader(csvfile)
-
-	recordsData, _ := data.ReadAll()
-	records := make([]Record, len(recordsData))
-	for i, d := range recordsData {
-		a := Line{d[0], d[1], d[2]}
-		b := Line{d[3], d[4], d[5]}
-		r := Record{i, a, b}
-
-		records[i] = r
-	}
-	return records
-}
-
-func indexRecords(indexPath string, records []Record) *bleve.Index {
+func indexData(indexPath string, data *Data) *bleve.Index {
 	fmt.Print("Checking for indexes...")
 	bIndex, err := bleve.Open(indexPath)
 	if err == nil {
@@ -116,10 +69,12 @@ func indexRecords(indexPath string, records []Record) *bleve.Index {
 		panic(err)
 	}
 
-	for _, r := range records {
-		bMessage := bRecord{strconv.Itoa(r.ID), r.A.Text, r.B.Text}
+	data.WalkRecords(func(showId int, fileId int, record Record) {
+		id := fmt.Sprintf("%d.%d.%d", showId, fileId, record.ID)
+		bMessage := message{id, record.A.Text, record.B.Text}
 		bIndex.Index(bMessage.ID, bMessage)
-	}
+	})
+
 	return &bIndex
 }
 
