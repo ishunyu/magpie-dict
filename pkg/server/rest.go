@@ -37,10 +37,10 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 
 	hitsIds := index.Search(searchText)
 	if hitsIds == nil {
-		logMessage += " (No results)"
-		fmt.Println(logMessage)
 		hitsIds = make([][]int, 0)
 	}
+
+	logMessage += fmt.Sprintf(",%d", len(hitsIds))
 
 	hitsIds = hitsIds[0:Min(len(hitsIds), 5)]
 	result := searchResult{make([]*searchData, len(hitsIds))}
@@ -52,7 +52,7 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 	fmt.Fprintf(w, string(data))
 
 	elapsed := time.Since(start)
-	logMessage += fmt.Sprintf(" (%s)", elapsed)
+	logMessage += fmt.Sprintf(",%s", elapsed)
 
 	fmt.Println(logMessage)
 }

@@ -6,7 +6,7 @@
     <title>Magpie Dictionary</title>
     <style>
         div.results {
-            padding: 10px;
+            padding-top: 10px;
         }
 
         table, th, td {
@@ -73,6 +73,9 @@
     }
 
     function createView(data) {
+        if (data.length == 0) {
+            return wrap("div", "Sorry, no results for this search. ")
+        }
         views = ""
         for (const d of data) {
             views += createRecordContext(d.subs);
