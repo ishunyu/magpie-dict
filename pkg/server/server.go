@@ -13,6 +13,7 @@ func main() {
 	http.HandleFunc("/search", GetSearchHandler(index))
 
 	port := config.GetPort()
-	fmt.Printf("Starting server on localhost:%v\n", port)
-	http.ListenAndServe(fmt.Sprintf("%s:%d", config.Hostname, port), nil)
+	url := fmt.Sprintf("%s:%d", config.Hostname, port)
+	fmt.Printf("Starting server on %v\n", url)
+	http.ListenAndServe(url, nil)
 }
