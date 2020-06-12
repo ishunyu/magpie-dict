@@ -1,0 +1,91 @@
+.container {
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+	align-items: center;
+	font-size: 50px;
+}
+
+.subs {
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
+	align-items: flex-start;
+}
+
+.returned-item {
+	border: 1px solid;
+	box-shadow: 5px 10px #888888;
+	padding: 2rem;
+	height: 14rem;
+	width: 40%;
+	margin: 1rem;
+	border-radius: 10px;
+}
+
+.meta-data {
+	display: flex;
+	justify-content: space-between;
+	height: 20%;
+}
+
+.Chinese,
+.English {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	width: 45%;
+	height: 8rem;
+	margin-top: 10px;
+}
+
+div.results {
+	padding-top: 10px;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	justify-content: space-around;
+}
+
+body {
+	font-family: Bahnschrift Regular;
+}
+
+input {
+	width: 45%;
+	margin: 2px 20px;
+	border-radius: 10px;
+}
+
+input:focus {
+	-webkit-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
+	-moz-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
+	transition: all 0.4s ease 0s;
+}
+
+#searchDiv {
+	width: 50%;
+	display: flex;
+	justify-content: center;
+}
+
+button {
+	color: #fff !important;
+	text-transform: uppercase;
+	text-decoration: none;
+	background: #60a3bc;
+	padding: 10px;
+	width: 70px;
+	border-radius: 20px;
+	display: inline-block;
+	border: none;
+	transition: all 0.4s ease 0s;
+}
+
+button:hover {
+	text-shadow: 0px 0px 6px rgba(255, 255, 255, 1);
+	-webkit-box-shadow: 0px 5px 40px -10px rgba(0, 0, 0, 0.57);
+	-moz-box-shadow: 0px 5px 40px -10px rgba(0, 0, 0, 0.57);
+	transition: all 0.4s ease 0s;
+}
