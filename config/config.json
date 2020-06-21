@@ -2,6 +2,6 @@
     "comment": "This is a template for configuration files. Please make a copy of this file and pass it into the program `go run src/server.go config/local.json`",
     "hostname": "",
     "port": 8090,
-    "rootPath": "",
-    "indexPath": ""
+    "rootPath": "Project root path",
+    "indexPath": "Cached index path"
 }
