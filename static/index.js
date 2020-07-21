@@ -1,8 +1,8 @@
-function search (){
+function search() {
 	var xhttp;
 	var searchTerm = document.getElementById('searchbox').value;
 	xhttp = new XMLHttpRequest();
-	xhttp.onreadystatechange = function (){
+	xhttp.onreadystatechange = function () {
 		if (this.readyState == 4 && this.status == 200) {
 			results = JSON.parse(this.responseText);
 			createView(results.data);
@@ -10,15 +10,16 @@ function search (){
 	};
 	xhttp.open('GET', 'search?searchText=' + searchTerm, true);
 	xhttp.send();
+	createView(data)
 }
 
-function searchKeyDown (ele){
+function searchKeyDown(ele) {
 	if (event.key === 'Enter') {
 		search();
 	}
 }
 
-function createView (data){
+function createView(data) {
 	const results = document.querySelector('#results');
 	results.innerHTML = '';
 	if (data.length === 0) {
@@ -40,21 +41,20 @@ function createView (data){
 	}
 }
 
-function createMetadataView (d){
+function createMetadataView(d) {
 	const show = d.show
 	const episode = d.episode;
 	const timestamp = d.subs.post.a.start;
 	const metadataView = document.createElement('div');
 	metadataView.innerHTML = `
     <span>${show} | ${episode}</span>
-    <span>Episode: ${episode}</span>
     <span>Timestamp: ${timestamp}</span>
 `;
 	metadataView.classList.add('meta-data');
 	return metadataView;
 }
 
-function createChineseView (d){
+function createChineseView(d) {
 	const chineseLines = document.createElement('div');
 	const chineseTexts = [];
 	for (let key in d.subs) {
@@ -72,7 +72,7 @@ function createChineseView (d){
 	return chineseLines;
 }
 
-function createEnglishView (d){
+function createEnglishView(d) {
 	const englishLines = document.createElement('div');
 	const englishTexts = [];
 	for (let key in d.subs) {
