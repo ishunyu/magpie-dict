@@ -17,7 +17,6 @@
 	border: 1px solid;
 	box-shadow: 5px 10px #888888;
 	padding: 2rem;
-	height: 14rem;
 	width: 40%;
 	margin: 1rem;
 	border-radius: 10px;
@@ -33,10 +32,12 @@
 .English {
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
+	justify-content: space-around;
 	width: 45%;
-	height: 8rem;
+	min-height: 10rem;
 	margin-top: 10px;
+	white-space: normal;
+	overflow: overlay;
 }
 
 div.results {
