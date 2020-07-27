@@ -98,6 +98,7 @@ func getRecordFile(filePath string) Showfile {
 
 func getRecords(fileCSV string) []Record {
 	csvfile, _ := os.Open(fileCSV)
+	defer csvfile.Close()
 	data := csv.NewReader(csvfile)
 
 	recordsData, _ := data.ReadAll()

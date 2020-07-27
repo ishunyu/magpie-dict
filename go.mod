@@ -9,5 +9,6 @@ require (
 	github.com/glycerine/go-unsnap-stream v0.0.0-20190901134440-81cf024a9e0a // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/tinylib/msgp v1.1.2 // indirect
+	github.com/yanyiwu/gojieba v1.1.2
 	golang.org/x/sys v0.0.0-20200519105757-fe76b779f299 // indirect
 )

@@ -14,6 +14,7 @@ type Config struct {
 	Port      int    `json:port`
 	RootPath  string `json:"rootPath"`
 	IndexPath string `json:"indexPath"`
+	DataPath  string `json:"dataPath"`
 }
 
 // GetConfig returns config data based in json
