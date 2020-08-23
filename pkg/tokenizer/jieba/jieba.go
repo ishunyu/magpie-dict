@@ -31,7 +31,8 @@ func (jt *JiebaTokenizer) Tokenize(input []byte) analysis.TokenStream {
 	end := 0
 	pos := 1
 	var width int
-	words := jt.tokenizer.Cut(string(input), true)
+	words := jt.tokenizer.CutForSearch(string(input), true)
+	fmt.Println(words)
 	for _, word := range words {
 		end = start + len(word)
 		token := analysis.Token{
