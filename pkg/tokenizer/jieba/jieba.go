@@ -32,7 +32,6 @@ func (jt *JiebaTokenizer) Tokenize(input []byte) analysis.TokenStream {
 	pos := 1
 	var width int
 	words := jt.tokenizer.CutForSearch(string(input), true)
-	fmt.Println(words)
 	for _, word := range words {
 		end = start + len(word)
 		token := analysis.Token{
@@ -42,6 +41,7 @@ func (jt *JiebaTokenizer) Tokenize(input []byte) analysis.TokenStream {
 			Position: pos,
 			Type:     detectTokenType(word),
 		}
+		fmt.Println(&token)
 		rv = append(rv, &token)
 		pos++
 		runeStart += width
@@ -57,6 +57,10 @@ func JiebaTokenizerConstructor(config map[string]interface{}, cache *registry.Ca
 
 func detectTokenType(term string) analysis.TokenType {
 	if ideographRegexp.MatchString(term) {
+		if len(term) == 6 {
+			fmt.Printf("HI")
+			return analysis.Double
+		}
 		return analysis.Ideographic
 	}
 	_, err := strconv.ParseFloat(term, 64)

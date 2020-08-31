@@ -7,10 +7,8 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/analysis/analyzer/custom"
+	// "github.com/blevesearch/bleve/analysis/lang/cjk"
 	"github.com/blevesearch/bleve/mapping"
-
-	"github.com/ishunyu/magpie-dict/pkg/tokenizer/jieba"
 )
 
 type Index struct {
@@ -86,18 +84,9 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 
 func getNewMapping() *mapping.IndexMappingImpl {
 	m := bleve.NewIndexMapping()
-	err := m.AddCustomAnalyzer("cn", map[string]interface{}{
-		"type":      custom.Name,
-		"tokenizer": jieba.Name,
-	})
-
-	fieldMapping := bleve.NewTextFieldMapping()
-	fieldMapping.Analyzer = "cn"
-	m.DefaultMapping.AddFieldMappingsAt("AText", fieldMapping)
-
-	if err != nil {
-		fmt.Errorf("%v", err)
-	}
+	// fieldMapping := bleve.NewTextFieldMapping()
+	// fieldMapping.Analyzer = cjk.AnalyzerName
+	// m.DefaultMapping.AddFieldMappingsAt("AText", fieldMapping)
 
 	return m
 }
