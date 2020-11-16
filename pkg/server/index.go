@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
-	// "github.com/blevesearch/bleve/analysis/lang/cjk"
 	"github.com/blevesearch/bleve/mapping"
+
+	"github.com/ishunyu/magpie-dict/pkg/analysis/jieba"
 )
 
 type Index struct {
@@ -20,6 +21,10 @@ type message struct {
 	ID    string
 	AText string
 	BText string
+}
+
+func (index Index) Type() string {
+	return "message"
 }
 
 func GetIndex(config *Config) *Index {
@@ -83,10 +88,15 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 }
 
 func getNewMapping() *mapping.IndexMappingImpl {
-	m := bleve.NewIndexMapping()
-	// fieldMapping := bleve.NewTextFieldMapping()
-	// fieldMapping.Analyzer = cjk.AnalyzerName
-	// m.DefaultMapping.AddFieldMappingsAt("AText", fieldMapping)
+	indexMapping := bleve.NewIndexMapping()
+	documentMapping := bleve.NewDocumentMapping()
+	indexMapping.AddDocumentMapping("message", documentMapping)
 
-	return m
+	fieldMapping := bleve.NewTextFieldMapping()
+	fieldMapping.Analyzer = jieba.Analyzer
+	indexMapping.DefaultMapping.AddFieldMappingsAt("AText", fieldMapping)
+
+	fmt.Println("mapping:", indexMapping.AnalyzerNameForPath("message.AText"))
+
+	return indexMapping
 }

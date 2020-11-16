@@ -10,7 +10,7 @@ import (
 	"github.com/yanyiwu/gojieba"
 )
 
-const Name = "jieba"
+const Tokenizer = "jieba_tokenizer"
 
 var ideographRegexp = regexp.MustCompile(`\p{Han}+`)
 
@@ -51,14 +51,14 @@ func (jt *JiebaTokenizer) Tokenize(input []byte) analysis.TokenStream {
 }
 
 func JiebaTokenizerConstructor(config map[string]interface{}, cache *registry.Cache) (analysis.Tokenizer, error) {
-	fmt.Println("New Jieba Tokenizer initialized!")
+	defer fmt.Println("New Jieba Tokenizer initialized!")
 	return NewJiebaTokenizer()
 }
 
 func detectTokenType(term string) analysis.TokenType {
 	if ideographRegexp.MatchString(term) {
 		if len(term) == 6 {
-			fmt.Printf("HI")
+			// fmt.Printf("HI")
 			return analysis.Double
 		}
 		return analysis.Ideographic
@@ -71,5 +71,5 @@ func detectTokenType(term string) analysis.TokenType {
 }
 
 func init() {
-	registry.RegisterTokenizer(Name, JiebaTokenizerConstructor)
+	registry.RegisterTokenizer(Tokenizer, JiebaTokenizerConstructor)
 }
