@@ -41,7 +41,7 @@ func (jt *JiebaTokenizer) Tokenize(input []byte) analysis.TokenStream {
 			Position: pos,
 			Type:     detectTokenType(word),
 		}
-		fmt.Println(&token)
+		// fmt.Println("jieba:", &token)
 		rv = append(rv, &token)
 		pos++
 		runeStart += width

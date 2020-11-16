@@ -23,7 +23,7 @@ type message struct {
 	BText string
 }
 
-func (index Index) Type() string {
+func (msg message) Type() string {
 	return "message"
 }
 
@@ -34,7 +34,8 @@ func GetIndex(config *Config) *Index {
 }
 
 func (index *Index) Search(searchText string) [][]int {
-	query := bleve.NewQueryStringQuery(searchText)
+	queryString := "*" + searchText + "*"
+	query := bleve.NewWildcardQuery(queryString)
 	searchRequest := bleve.NewSearchRequest(query)
 	searchResult, err := (*index.BIndex).Search(searchRequest)
 	if err != nil {
@@ -63,19 +64,19 @@ func (index *Index) Search(searchText string) [][]int {
 func indexData(indexPath string, data *Data) *bleve.Index {
 	bIndex, err := bleve.Open(indexPath)
 	if err == nil {
-		fmt.Println("Index found!")
+		fmt.Println("Index found.")
 		return &bIndex
 	}
-	fmt.Println("Index found not found!")
+	fmt.Println("Index not found.")
 
-	fmt.Println("Indexing started")
-	start := time.Now()
 	mapping := getNewMapping()
 	bIndex, err = bleve.New(indexPath, mapping)
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Println("Indexing started.")
+	start := time.Now()
 	data.WalkRecords(func(showId int, fileId int, record Record) {
 		id := fmt.Sprintf("%d.%d.%d", showId, fileId, record.ID)
 		bMessage := message{id, record.A.Text, record.B.Text}
@@ -83,7 +84,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 	})
 
 	elapsed := time.Since(start)
-	fmt.Printf("Indexing completed! (%v)\n", elapsed)
+	fmt.Printf("Indexing completed. (%v)\n", elapsed)
 	return &bIndex
 }
 
@@ -92,11 +93,15 @@ func getNewMapping() *mapping.IndexMappingImpl {
 	documentMapping := bleve.NewDocumentMapping()
 	indexMapping.AddDocumentMapping("message", documentMapping)
 
-	fieldMapping := bleve.NewTextFieldMapping()
-	fieldMapping.Analyzer = jieba.Analyzer
-	indexMapping.DefaultMapping.AddFieldMappingsAt("AText", fieldMapping)
+	idFieldMapping := bleve.NewTextFieldMapping()
+	idFieldMapping.Index = false
+	documentMapping.AddFieldMappingsAt("ID", idFieldMapping)
 
-	fmt.Println("mapping:", indexMapping.AnalyzerNameForPath("message.AText"))
+	aTextFieldMapping := bleve.NewTextFieldMapping()
+	aTextFieldMapping.Analyzer = jieba.Analyzer
+	documentMapping.AddFieldMappingsAt("AText", aTextFieldMapping)
+
+	fmt.Println("mapping:", indexMapping.AnalyzerNameForPath("AText"))
 
 	return indexMapping
 }
