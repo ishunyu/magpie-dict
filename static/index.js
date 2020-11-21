@@ -44,7 +44,7 @@ function createView(data) {
 function createMetadataView(d) {
 	const show = d.show
 	const episode = d.episode;
-	const timestamp = d.subs.post.a.start;
+	const timestamp = d.subs.sub.a.start;
 	const metadataView = document.createElement('div');
 	metadataView.innerHTML = `
     <span>${show} | ${episode}</span>
@@ -58,7 +58,8 @@ function createChineseView(d) {
 	const chineseLines = document.createElement('div');
 	const chineseTexts = [];
 	for (let key in d.subs) {
-		if (d.subs[key]['a'].text.length !== 0) {
+		console.log(key)
+		if (d.subs[key] && d.subs[key]['a'].text.length !== 0) {
 			chineseTexts.push(d.subs[key]['a'].text);
 		}
 	}
@@ -76,7 +77,7 @@ function createEnglishView(d) {
 	const englishLines = document.createElement('div');
 	const englishTexts = [];
 	for (let key in d.subs) {
-		if (d.subs[key]['b'].text.length !== 0) {
+		if (d.subs[key] && d.subs[key]['b'].text.length !== 0) {
 			englishTexts.push(d.subs[key]['b'].text);
 		}
 	}
