@@ -55,7 +55,7 @@ function createView(data) {
 function createMetadataView(d) {
 	const show = d.show
 	const episode = d.episode;
-	const timestamp = d.subs[0].a.start;
+	const timestamp = d.subs[0].a.start == '' ? d.subs[0].b.start : d.subs[0].a.start;
 	const metadataView = document.createElement('div');
 	metadataView.innerHTML = `
     <span>${show} | ${episode}</span>
