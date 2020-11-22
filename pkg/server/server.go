@@ -11,6 +11,7 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir(config.GetHtmlDir())))
 	http.HandleFunc("/search", GetSearchHandler(index))
+	http.HandleFunc("/subs", SubsHandler(index))
 
 	port := config.GetPort()
 	url := fmt.Sprintf("%s:%d", config.Hostname, port)
