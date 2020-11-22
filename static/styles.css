@@ -51,6 +51,17 @@
 	overflow: overlay;
 }
 
+.showlistlabel {
+	font-size: 16px;
+	white-space: nowrap;
+}
+
+.divider{
+	width:25px;
+	height:auto;
+	display:inline-block;
+}
+
 div.results {
 	padding-top: 10px;
 	display: flex;
@@ -64,13 +75,13 @@ body {
 	font-family: Bahnschrift Regular;
 }
 
-input {
+#searchbox {
 	width: 45%;
 	margin: 2px 20px;
 	border-radius: 10px;
 }
 
-input:focus {
+#searchbox:focus {
 	-webkit-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
 	-moz-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
 	transition: all 0.4s ease 0s;
@@ -80,6 +91,10 @@ input:focus {
 	width: 50%;
 	display: flex;
 	justify-content: center;
+}
+
+#showlist {
+	display: flex;
 }
 
 button {

@@ -7,6 +7,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/mapping"
 
+	"github.com/ishunyu/magpie-dict/pkg/analysis/singletoken"
 	"github.com/ishunyu/magpie-dict/pkg/analysis/wholesentence"
 )
 
@@ -16,9 +17,10 @@ type Index struct {
 }
 
 type message struct {
-	ID    string
-	AText string
-	BText string
+	ID     string
+	ShowID string
+	AText  string
+	BText  string
 }
 
 func (msg message) Type() string {
@@ -33,7 +35,12 @@ func GetIndex(config *Config) *Index {
 
 func (index *Index) Search(searchText string) []*recordID {
 	queryString := "*" + searchText + "*"
-	query := bleve.NewWildcardQuery(queryString)
+	wildcardQuery := bleve.NewWildcardQuery(queryString)
+
+	fieldQuery := bleve.NewQueryStringQuery("ShowID:zhz")
+
+	query := bleve.NewBooleanQuery()
+	query.AddMust(fieldQuery, wildcardQuery)
 
 	bSearchRequest := bleve.NewSearchRequest(query)
 	bSearchResult, err := (*index.BIndex).Search(bSearchRequest)
@@ -72,7 +79,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 	fmt.Println("Indexing started.")
 	start := time.Now()
 	data.WalkRecords(func(showID string, fileID int, record Record) {
-		bMessage := message{record.ID, record.A.Text, record.B.Text}
+		bMessage := message{record.ID, showID, record.A.Text, record.B.Text}
 		bIndex.Index(bMessage.ID, bMessage)
 	})
 
@@ -90,9 +97,19 @@ func getNewMapping() *mapping.IndexMappingImpl {
 	idFieldMapping.Index = false
 	documentMapping.AddFieldMappingsAt("ID", idFieldMapping)
 
+	showIDFieldMapping := bleve.NewTextFieldMapping()
+	showIDFieldMapping.Store = false
+	showIDFieldMapping.Analyzer = singletoken.Analyzer
+	documentMapping.AddFieldMappingsAt("ShowID", showIDFieldMapping)
+
 	aTextFieldMapping := bleve.NewTextFieldMapping()
+	aTextFieldMapping.Store = false
 	aTextFieldMapping.Analyzer = wholesentence.Analyzer
 	documentMapping.AddFieldMappingsAt("AText", aTextFieldMapping)
+
+	bTextFieldMapping := bleve.NewTextFieldMapping()
+	bTextFieldMapping.Store = false
+	documentMapping.AddFieldMappingsAt("BText", bTextFieldMapping)
 
 	return indexMapping
 }
