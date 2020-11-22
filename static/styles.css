@@ -25,7 +25,18 @@
 .meta-data {
 	display: flex;
 	justify-content: space-between;
-	height: 20%;
+	height: 25px;
+}
+
+.more {
+	text-align: center;
+	color: gray;
+	opacity: .1;
+	cursor: pointer;
+}
+
+.more:hover {
+	opacity: 1;
 }
 
 .Chinese,

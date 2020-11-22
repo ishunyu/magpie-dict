@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -21,6 +22,12 @@ type Record struct {
 	ID string `json:"id"`
 	A  Line   `json:"a"`
 	B  Line   `json:"b"`
+}
+
+type recordID struct {
+	showID string
+	fileID int
+	subID  int
 }
 
 type Showfile struct {
@@ -134,5 +141,17 @@ func (data *Data) WalkRecords(f WalkFunc) {
 		}
 		elapsed := time.Since(start)
 		fmt.Printf("Finished %v (%v)\n", show.Title, elapsed)
+	}
+}
+
+func parseRecordID(s string) *recordID {
+	parts := strings.Split(s, ".")
+	fileID, _ := strconv.Atoi(parts[1])
+	subID, _ := strconv.Atoi(parts[2])
+
+	return &recordID{
+		showID: parts[0],
+		fileID: fileID,
+		subID:  subID,
 	}
 }

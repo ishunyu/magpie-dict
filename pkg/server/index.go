@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -23,12 +21,6 @@ type message struct {
 	BText string
 }
 
-type searchResult struct {
-	showID string
-	fileID int
-	subID  int
-}
-
 func (msg message) Type() string {
 	return "message"
 }
@@ -39,7 +31,7 @@ func GetIndex(config *Config) *Index {
 	return &Index{data, index}
 }
 
-func (index *Index) Search(searchText string) []searchResult {
+func (index *Index) Search(searchText string) []*recordID {
 	queryString := "*" + searchText + "*"
 	query := bleve.NewWildcardQuery(queryString)
 
@@ -55,16 +47,9 @@ func (index *Index) Search(searchText string) []searchResult {
 		return nil
 	}
 
-	searchResults := make([]searchResult, numHits)
+	searchResults := make([]*recordID, numHits)
 	for i, match := range bSearchResult.Hits {
-		parts := strings.Split(match.ID, ".")
-		fileID, _ := strconv.Atoi(parts[1])
-		subID, _ := strconv.Atoi(parts[2])
-		searchResults[i] = searchResult{
-			showID: parts[0],
-			fileID: fileID,
-			subID:  subID,
-		}
+		searchResults[i] = parseRecordID(match.ID)
 	}
 
 	return searchResults
