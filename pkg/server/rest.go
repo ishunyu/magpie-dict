@@ -7,17 +7,17 @@ import (
 	"time"
 )
 
-type searchResult struct {
-	Data []*searchData `json:"data"`
+type searchResponse struct {
+	Data []*searchResponseData `json:"data"`
 }
 
-type searchData struct {
-	Show    string      `json:"show"`
-	Episode string      `json:"episode"`
-	Subs    *searchSubs `json:"subs"`
+type searchResponseData struct {
+	Show    string              `json:"show"`
+	Episode string              `json:"episode"`
+	Subs    *searchResponseSubs `json:"subs"`
 }
 
-type searchSubs struct {
+type searchResponseSubs struct {
 	Sub  *Record `json:"sub"`
 	Pre  *Record `json:"pre"`
 	Post *Record `json:"post"`
@@ -35,20 +35,20 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 	searchText := req.FormValue("searchText")
 	logMessage := searchText
 
-	hitsIds := index.Search(searchText)
-	if hitsIds == nil {
-		hitsIds = make([][]int, 0)
+	searchResults := index.Search(searchText)
+	if searchResults == nil {
+		searchResults = make([]searchResult, 0)
 	}
 
-	logMessage += fmt.Sprintf(",%d", len(hitsIds))
+	logMessage += fmt.Sprintf(",%d", len(searchResults))
 
-	hitsIds = hitsIds[0:Min(len(hitsIds), 5)]
-	result := searchResult{make([]*searchData, len(hitsIds))}
-	for i, ids := range hitsIds {
-		result.Data[i] = retreiveResults(&index.Data, ids)
+	searchResults = searchResults[0:Min(len(searchResults), 10)]
+	response := searchResponse{make([]*searchResponseData, len(searchResults))}
+	for i, result := range searchResults {
+		response.Data[i] = retreiveResponse(&index.Data, &result)
 	}
 
-	data, _ := json.Marshal(result)
+	data, _ := json.Marshal(response)
 	fmt.Fprintf(w, string(data))
 
 	elapsed := time.Since(start)
@@ -57,25 +57,24 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 	fmt.Println(logMessage)
 }
 
-func retreiveResults(data *Data, ids []int) *searchData {
-	if ids == nil {
+func retreiveResponse(data *Data, result *searchResult) *searchResponseData {
+	if result == nil {
 		return nil
 	}
 
-	showId, fileId, id := ids[0], ids[1], ids[2]
-	show := data.Shows[showId]
-	file := show.Files[fileId]
-	subs := retreiveRecordContext(&file, id)
+	show := data.Shows[result.showID]
+	file := show.Files[result.fileID]
+	subs := retreiveRecordContext(&file, result.subID)
 
-	return &searchData{show.Title, file.Name, subs}
+	return &searchResponseData{show.Title, file.Name, subs}
 }
 
-func retreiveRecordContext(file *Showfile, id int) *searchSubs {
+func retreiveRecordContext(file *Showfile, id int) *searchResponseSubs {
 	pre := GetRecord(file, id-1)
 	sub := GetRecord(file, id)
 	post := GetRecord(file, id+1)
 
-	return &searchSubs{Pre: pre, Sub: sub, Post: post}
+	return &searchResponseSubs{Pre: pre, Sub: sub, Post: post}
 }
 
 func GetRecord(file *Showfile, id int) *Record {

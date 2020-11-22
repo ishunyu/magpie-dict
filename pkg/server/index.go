@@ -23,6 +23,12 @@ type message struct {
 	BText string
 }
 
+type searchResult struct {
+	showID string
+	fileID int
+	subID  int
+}
+
 func (msg message) Type() string {
 	return "message"
 }
@@ -33,32 +39,35 @@ func GetIndex(config *Config) *Index {
 	return &Index{data, index}
 }
 
-func (index *Index) Search(searchText string) [][]int {
+func (index *Index) Search(searchText string) []searchResult {
 	queryString := "*" + searchText + "*"
 	query := bleve.NewWildcardQuery(queryString)
-	searchRequest := bleve.NewSearchRequest(query)
-	searchResult, err := (*index.BIndex).Search(searchRequest)
+
+	bSearchRequest := bleve.NewSearchRequest(query)
+	bSearchResult, err := (*index.BIndex).Search(bSearchRequest)
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
 
-	hits := len(searchResult.Hits)
-	if hits == 0 {
+	numHits := len(bSearchResult.Hits)
+	if numHits == 0 {
 		return nil
 	}
 
-	hitsIds := make([][]int, hits)
-	for i, match := range searchResult.Hits {
+	searchResults := make([]searchResult, numHits)
+	for i, match := range bSearchResult.Hits {
 		parts := strings.Split(match.ID, ".")
-		nums := make([]int, len(parts))
-		for j, s := range parts {
-			nums[j], _ = strconv.Atoi(s)
+		fileID, _ := strconv.Atoi(parts[1])
+		subID, _ := strconv.Atoi(parts[2])
+		searchResults[i] = searchResult{
+			showID: parts[0],
+			fileID: fileID,
+			subID:  subID,
 		}
-		hitsIds[i] = nums
 	}
 
-	return hitsIds
+	return searchResults
 }
 
 func indexData(indexPath string, data *Data) *bleve.Index {
@@ -77,9 +86,8 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 
 	fmt.Println("Indexing started.")
 	start := time.Now()
-	data.WalkRecords(func(showId int, fileId int, record Record) {
-		id := fmt.Sprintf("%d.%d.%d", showId, fileId, record.ID)
-		bMessage := message{id, record.A.Text, record.B.Text}
+	data.WalkRecords(func(showID string, fileID int, record Record) {
+		bMessage := message{record.ID, record.A.Text, record.B.Text}
 		bIndex.Index(bMessage.ID, bMessage)
 	})
 
