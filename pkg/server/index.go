@@ -6,7 +6,9 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/search/query"
 
+	"github.com/ishunyu/magpie-dict/pkg/analysis/singletoken"
 	"github.com/ishunyu/magpie-dict/pkg/analysis/wholesentence"
 )
 
@@ -16,9 +18,10 @@ type Index struct {
 }
 
 type message struct {
-	ID    string
-	AText string
-	BText string
+	ID     string
+	ShowID string
+	AText  string
+	BText  string
 }
 
 func (msg message) Type() string {
@@ -31,11 +34,21 @@ func GetIndex(config *Config) *Index {
 	return &Index{data, index}
 }
 
-func (index *Index) Search(searchText string) []*recordID {
+func (index *Index) Search(searchText string, showID string) []*recordID {
 	queryString := "*" + searchText + "*"
-	query := bleve.NewWildcardQuery(queryString)
+	wildcardQuery := bleve.NewWildcardQuery(queryString)
 
-	bSearchRequest := bleve.NewSearchRequest(query)
+	var newQuery query.Query
+	if showID != "" {
+		fieldQuery := bleve.NewQueryStringQuery("ShowID:" + showID)
+		booleanQuery := bleve.NewBooleanQuery()
+		booleanQuery.AddMust(fieldQuery, wildcardQuery)
+		newQuery = booleanQuery
+	} else {
+		newQuery = wildcardQuery
+	}
+
+	bSearchRequest := bleve.NewSearchRequest(newQuery)
 	bSearchResult, err := (*index.BIndex).Search(bSearchRequest)
 	if err != nil {
 		fmt.Println(err)
@@ -72,7 +85,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 	fmt.Println("Indexing started.")
 	start := time.Now()
 	data.WalkRecords(func(showID string, fileID int, record Record) {
-		bMessage := message{record.ID, record.A.Text, record.B.Text}
+		bMessage := message{record.ID, showID, record.A.Text, record.B.Text}
 		bIndex.Index(bMessage.ID, bMessage)
 	})
 
@@ -90,9 +103,19 @@ func getNewMapping() *mapping.IndexMappingImpl {
 	idFieldMapping.Index = false
 	documentMapping.AddFieldMappingsAt("ID", idFieldMapping)
 
+	showIDFieldMapping := bleve.NewTextFieldMapping()
+	showIDFieldMapping.Store = false
+	showIDFieldMapping.Analyzer = singletoken.Analyzer
+	documentMapping.AddFieldMappingsAt("ShowID", showIDFieldMapping)
+
 	aTextFieldMapping := bleve.NewTextFieldMapping()
+	aTextFieldMapping.Store = false
 	aTextFieldMapping.Analyzer = wholesentence.Analyzer
 	documentMapping.AddFieldMappingsAt("AText", aTextFieldMapping)
+
+	bTextFieldMapping := bleve.NewTextFieldMapping()
+	bTextFieldMapping.Store = false
+	documentMapping.AddFieldMappingsAt("BText", bTextFieldMapping)
 
 	return indexMapping
 }
