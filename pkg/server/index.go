@@ -6,6 +6,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/search/query"
 
 	"github.com/ishunyu/magpie-dict/pkg/analysis/singletoken"
 	"github.com/ishunyu/magpie-dict/pkg/analysis/wholesentence"
@@ -33,16 +34,21 @@ func GetIndex(config *Config) *Index {
 	return &Index{data, index}
 }
 
-func (index *Index) Search(searchText string) []*recordID {
+func (index *Index) Search(searchText string, showID string) []*recordID {
 	queryString := "*" + searchText + "*"
 	wildcardQuery := bleve.NewWildcardQuery(queryString)
 
-	fieldQuery := bleve.NewQueryStringQuery("ShowID:zhz")
+	var newQuery query.Query
+	if showID != "" {
+		fieldQuery := bleve.NewQueryStringQuery("ShowID:" + showID)
+		booleanQuery := bleve.NewBooleanQuery()
+		booleanQuery.AddMust(fieldQuery, wildcardQuery)
+		newQuery = booleanQuery
+	} else {
+		newQuery = wildcardQuery
+	}
 
-	query := bleve.NewBooleanQuery()
-	query.AddMust(fieldQuery, wildcardQuery)
-
-	bSearchRequest := bleve.NewSearchRequest(query)
+	bSearchRequest := bleve.NewSearchRequest(newQuery)
 	bSearchResult, err := (*index.BIndex).Search(bSearchRequest)
 	if err != nil {
 		fmt.Println(err)

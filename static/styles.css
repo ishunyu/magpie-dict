@@ -56,7 +56,7 @@
 	white-space: nowrap;
 }
 
-.divider{
+.divider {
 	width:25px;
 	height:auto;
 	display:inline-block;
@@ -73,28 +73,6 @@ div.results {
 
 body {
 	font-family: Bahnschrift Regular;
-}
-
-#searchbox {
-	width: 45%;
-	margin: 2px 20px;
-	border-radius: 10px;
-}
-
-#searchbox:focus {
-	-webkit-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
-	-moz-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
-	transition: all 0.4s ease 0s;
-}
-
-#searchDiv {
-	width: 50%;
-	display: flex;
-	justify-content: center;
-}
-
-#showlist {
-	display: flex;
 }
 
 button {
@@ -115,4 +93,32 @@ button:hover {
 	-webkit-box-shadow: 0px 5px 40px -10px rgba(0, 0, 0, 0.57);
 	-moz-box-shadow: 0px 5px 40px -10px rgba(0, 0, 0, 0.57);
 	transition: all 0.4s ease 0s;
+}
+
+#searchDiv {
+	width: 50%;
+	display: flex;
+	justify-content: center;
+}
+
+#searchbox {
+	width: 45%;
+	margin: 2px 20px;
+	border-radius: 10px;
+}
+
+#searchbox:focus {
+	-webkit-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
+	-moz-box-shadow: 0px 5px 20px -10px rgba(0, 0, 0, 0.57);
+	transition: all 0.4s ease 0s;
+}
+
+#showlistDiv {
+	display: flex;
+	padding-top: 5px;
+}
+
+#showlist-spacer {
+	padding: 10px;
+	width: 70px;
 }

@@ -34,9 +34,14 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 	start := time.Now()
 
 	searchText := req.FormValue("searchText")
-	logMessage := "/search " + searchText
+	showID := req.FormValue("showID")
 
-	searchResults := index.Search(searchText)
+	logMessage := "/search " + searchText
+	if showID != "" {
+		logMessage += " (" + showID + ")"
+	}
+
+	searchResults := index.Search(searchText, showID)
 	if searchResults == nil {
 		searchResults = make([]*recordID, 0)
 	}

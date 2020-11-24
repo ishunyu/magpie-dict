@@ -15,16 +15,21 @@
             <input type="text" id="searchbox" onkeydown="searchKeyDown(this)" autofocus/>
             <button onclick="search()">GO</button>
         </div>
-        <div id="showlist">
-            <input type="radio" name="showlist" id="all" value="all" checked="true"/>
+        <div id="showlistDiv">
+            <input type="radio" name="showlist" id="all" value="" checked="true"/>
             <label for="all" class="showlistlabel">all</label>
+
             <div class="divider"></div>
 
             <input type="radio" name="showlist" id="zhz" value="zhz"/>
             <label for="zhz" class="showlistlabel">Empresses In The Palace</label>
+
             <div class="divider"></div>
+
             <input type="radio" name="showlist" id="cn" value="cn"/>
             <label for="cn" class="showlistlabel">China Now</label>
+
+            <div id="showlist-spacer"></div>
         </div>
     </div>
     <div id="results" class="results"></div>
