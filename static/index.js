@@ -1,6 +1,7 @@
 function search() {
 	var xhttp;
 	var searchTerm = document.getElementById('searchbox').value;
+	var showID = getShowId();
 	xhttp = new XMLHttpRequest();
 	xhttp.onreadystatechange = function () {
 		if (this.readyState == 4 && this.status == 200) {
@@ -8,7 +9,7 @@ function search() {
 			createView(results.data);
 		}
 	};
-	xhttp.open('GET', 'search?searchText=' + searchTerm, true);
+	xhttp.open('GET', 'search?searchText=' + searchTerm + '&showID=' + showID, true);
 	xhttp.send();
 }
 
@@ -16,6 +17,17 @@ function searchKeyDown(ele) {
 	if (event.key === 'Enter') {
 		search();
 	}
+}
+
+function getShowId() {
+	var shows = document.getElementsByName('showlist');
+	for (const show of shows) {
+		if (show.checked) {
+			return show.value;
+		}
+	}
+
+	return '';
 }
 
 function createView(data) {
