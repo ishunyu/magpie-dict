@@ -10,6 +10,7 @@ func main() {
 	index := GetIndex(config)
 
 	http.Handle("/", http.FileServer(http.Dir(config.GetHtmlDir())))
+	http.HandleFunc("/shows", ShowsHandler(index))
 	http.HandleFunc("/search", GetSearchHandler(index))
 	http.HandleFunc("/subs", SubsHandler(index))
 
