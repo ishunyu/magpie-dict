@@ -8,6 +8,15 @@ import (
 	"time"
 )
 
+type showsResponse struct {
+	Shows []*showResponse `json:"shows"`
+}
+
+type showResponse struct {
+	Name    string `json:"name"`
+	Episode string `json:"episode"`
+}
+
 type searchResponse struct {
 	Data []*searchResponseData `json:"data"`
 }
@@ -16,6 +25,12 @@ type searchResponseData struct {
 	Show    string    `json:"show"`
 	Episode string    `json:"episode"`
 	Subs    []*Record `json:"subs"`
+}
+
+func ShowsHandler(index *Index) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		handleShows(w, req, index)
+	}
 }
 
 func GetSearchHandler(index *Index) func(http.ResponseWriter, *http.Request) {
@@ -28,6 +43,23 @@ func SubsHandler(index *Index) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		handleSubs(w, req, index)
 	}
+}
+
+func handleShows(w http.ResponseWriter, req *http.Request, index *Index) {
+	start := time.Now()
+	shows := make([]*showResponse, 0, len(index.Data.Shows))
+	for _, show := range index.Data.Shows {
+		file := show.Files[len(show.Files)-1]
+		showRes := showResponse{show.Title, file.Name}
+		shows = append(shows, &showRes)
+	}
+	showsRes := showsResponse{shows}
+
+	data, _ := json.Marshal(showsRes)
+	fmt.Fprintf(w, string(data))
+
+	elapsed := time.Since(start)
+	fmt.Println("/shows " + fmt.Sprintf(",%s", elapsed))
 }
 
 func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {

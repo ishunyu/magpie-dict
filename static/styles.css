@@ -122,3 +122,11 @@ button:hover {
 	padding: 10px;
 	width: 70px;
 }
+
+#show-data {
+	position: absolute;
+    right: 10px;
+    bottom: 10px;
+    font-size: small;
+    color: grey;
+}

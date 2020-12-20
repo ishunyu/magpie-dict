@@ -190,3 +190,26 @@ function updateSubs(ele, previous, results) {
 		ele.setAttribute('subid', subs[subs.length - 1].id)
 	}
 }
+
+function updateShows() {
+	var xhttp;
+	xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function () {
+		if (this.readyState == 4 && this.status == 200) {
+			results = JSON.parse(this.responseText);
+			shows = results.shows
+			
+			message = ""
+			shows.forEach(show => {
+				message += show.name + ": " + show.episode + ", "
+			});
+			message = message.substring(0, message.length - 2)
+
+			document.getElementById("show-data").innerHTML = message
+		}
+	};
+	xhttp.open('GET', 'shows', true);
+	xhttp.send();
+}
+
+window.onload = updateShows
