@@ -55,9 +55,9 @@ func SubsHandler(index *Index) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func CompareHandler(tmpPath string, comparePath string) func(http.ResponseWriter, *http.Request) {
+func CompareHandler(tmpPath string, comparePath string, compareVenvPath string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		handleCompare(w, req, tmpPath, comparePath)
+		handleCompare(w, req, tmpPath, comparePath, compareVenvPath)
 	}
 }
 
@@ -138,7 +138,7 @@ func handleSubs(w http.ResponseWriter, req *http.Request, index *Index) {
 	fmt.Fprintf(w, string(data))
 }
 
-func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comparePath string) {
+func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comparePath string, compareVenvPath string) {
 	compareDir := filepath.Join(tmpDir, "compare")
 	os.MkdirAll(compareDir, 0700)
 	ms := time.Now().UnixNano() / int64(time.Millisecond)
@@ -149,12 +149,20 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	original_file := getAndSaveFile(req, "ORIGINAL_FILE", dir, "original_file.sbv")
 	revised_file := getAndSaveFile(req, "REVISED_FILE", dir, "revised_file.sbv")
 
-	fmt.Println(chinese_file)
-	fmt.Println(original_file)
-	fmt.Println(revised_file)
+	fmt.Println("chinese_file: ", chinese_file)
+	fmt.Println("original_file: ", original_file)
+	fmt.Println("revised_file", revised_file)
 
 	output_file := filepath.Join(dir, "output.xlsx")
-	cmd := exec.Command("python", comparePath, "-o", output_file, original_file, revised_file, chinese_file)
+	var shCmd string
+	if chinese_file == "" {
+		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s", "source", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file)
+	} else {
+		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s %s", "source", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file, chinese_file)
+	}
+	fmt.Println(shCmd)
+	cmd := exec.Command("/bin/sh", "-c", shCmd)
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()

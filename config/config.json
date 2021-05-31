@@ -6,5 +6,6 @@
     "indexPath": "Cached index path",
     "dataPath": "Data path",
     "tmpPath": "Temperary path",
-    "comparePath": "Compare python script path"
+    "comparePath": "Compare python script path",
+    "compareVenvPath": "Venv activation path"
 }
