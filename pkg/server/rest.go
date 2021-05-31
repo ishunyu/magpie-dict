@@ -156,9 +156,9 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	output_file := filepath.Join(dir, "output.xlsx")
 	var shCmd string
 	if chinese_file == "" {
-		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s", "source", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file)
+		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s", ".", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file)
 	} else {
-		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s %s", "source", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file, chinese_file)
+		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s %s", ".", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file, chinese_file)
 	}
 	fmt.Println(shCmd)
 	cmd := exec.Command("/bin/sh", "-c", shCmd)
