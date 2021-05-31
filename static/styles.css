@@ -130,3 +130,7 @@ button:hover {
     font-size: small;
     color: grey;
 }
+
+#output {
+	white-space: pre;
+}
