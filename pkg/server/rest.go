@@ -171,6 +171,8 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	}
 
 	w.Write(bytes)
+
+	os.RemoveAll(dir)
 }
 
 func getAndSaveFile(req *http.Request, key string, dir string, filename string) string {
