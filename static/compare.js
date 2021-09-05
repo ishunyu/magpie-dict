@@ -1,4 +1,6 @@
 function upload(button) {
+    const messagesDiv = document.getElementById("messages")
+    messagesDiv.innerHTML = ""
     button.disabled = true
 
     formData = new FormData();           
@@ -10,12 +12,17 @@ function upload(button) {
         method: "POST", 
         body: formData
     })
-    .then(response => response.blob())
+    .then(response => {
+        if (response.status != 200) {
+            throw new Error("Sorry, there was a problem trying to compare the files. Make sure you have uploaded files correctly.")
+        }
+        return response.blob()
+    })
     .then(blob => {
-        console.log("size: " + blob.size)
         download(blob, "output.xlsx")
-        button.disabled = false
-    });
+    })
+    .catch(err => messagesDiv.innerHTML = err)
+    .finally(() => button.disabled = false);
 }
 
 function download(blob, filename) {

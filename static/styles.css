@@ -138,3 +138,8 @@ button:disabled {
 #output {
 	white-space: pre;
 }
+
+#messages {
+	padding-top: 10px;
+	color: red;
+}

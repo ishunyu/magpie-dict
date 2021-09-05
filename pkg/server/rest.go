@@ -144,6 +144,7 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	ms := time.Now().UnixNano() / int64(time.Millisecond)
 	dir, _ := ioutil.TempDir(compareDir, strconv.FormatInt(ms, 10)+"_")
 	fmt.Println(dir)
+	defer os.RemoveAll(dir)
 
 	chinese_file := getAndSaveFile(req, "CHINESE_FILE", dir, "chinese_file.sbv")
 	original_file := getAndSaveFile(req, "ORIGINAL_FILE", dir, "original_file.sbv")
@@ -152,6 +153,11 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	fmt.Println("chinese_file: ", chinese_file)
 	fmt.Println("original_file: ", original_file)
 	fmt.Println("revised_file", revised_file)
+
+	if original_file == "" || revised_file == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	output_file := filepath.Join(dir, "output.xlsx")
 	var shCmd string
@@ -179,8 +185,6 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	}
 
 	w.Write(bytes)
-
-	os.RemoveAll(dir)
 }
 
 func getAndSaveFile(req *http.Request, key string, dir string, filename string) string {
