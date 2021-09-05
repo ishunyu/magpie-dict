@@ -10,11 +10,14 @@ import (
 
 // Config used for storing app configuration
 type Config struct {
-	Hostname  string `json:"hostname"`
-	Port      int    `json:"port"`
-	RootPath  string `json:"rootPath"`
-	IndexPath string `json:"indexPath"`
-	DataPath  string `json:"dataPath"`
+	Hostname        string `json:"hostname"`
+	Port            int    `json:"port"`
+	RootPath        string `json:"rootPath"`
+	IndexPath       string `json:"indexPath"`
+	DataPath        string `json:"dataPath"`
+	TempPath        string `json:"tmpPath"`
+	ComparePath     string `json:"comparePath"`
+	CompareVenvPath string `json:"compareVenvPath"`
 }
 
 // GetConfig returns config data based in json

@@ -13,6 +13,7 @@ func main() {
 	http.HandleFunc("/shows", ShowsHandler(index))
 	http.HandleFunc("/search", GetSearchHandler(index))
 	http.HandleFunc("/subs", SubsHandler(index))
+	http.HandleFunc("/comparefiles", CompareHandler(config.TempPath, config.ComparePath, config.CompareVenvPath))
 
 	port := config.GetPort()
 	url := fmt.Sprintf("%s:%d", config.Hostname, port)
