@@ -1,4 +1,6 @@
-function upload() {
+function upload(button) {
+    button.disabled = true
+
     formData = new FormData();           
     formData.append("CHINESE_FILE", CHINESE_FILE.files[0]);
     formData.append("ORIGINAL_FILE", ORIGINAL_FILE.files[0]);
@@ -12,6 +14,7 @@ function upload() {
     .then(blob => {
         console.log("size: " + blob.size)
         download(blob, "output.xlsx")
+        button.disabled = false
     });
 }
 
