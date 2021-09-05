@@ -25,9 +25,9 @@ type Record struct {
 }
 
 type recordID struct {
-	showID string
-	fileID int
-	subID  int
+	showID   string
+	filename string
+	subID    int
 }
 
 type Showfile struct {
@@ -38,7 +38,7 @@ type Showfile struct {
 type Show struct {
 	ID    string
 	Title string
-	Files []Showfile
+	Files map[string]Showfile
 }
 
 type Data struct {
@@ -49,7 +49,7 @@ type manifest struct {
 	Title string `json:"title"`
 }
 
-type WalkFunc func(showID string, fileID int, record Record)
+type WalkFunc func(showID string, filename string, record Record)
 
 func GetData(dataPath string) Data {
 	shows := make(map[string]Show)
@@ -89,26 +89,28 @@ func getShow(showPath string) Show {
 	return Show{id, title, getRecordFiles(filepath.Join(showPath, "data"), id)}
 }
 
-func getRecordFiles(filesPath string, showID string) []Showfile {
-	files := make([]Showfile, 0, 10)
+func getRecordFiles(filesPath string, showID string) map[string]Showfile {
+	files := make(map[string]Showfile)
 	filepath.Walk(filesPath, func(filePath string, info os.FileInfo, err error) error {
-		if filePath == filesPath || strings.Split(filepath.Base(filePath), ".")[0] == "" {
+		if filePath == filesPath {
 			return nil
 		}
 
-		files = append(files, getRecordFile(filePath, showID, len(files)))
+		fullfilename := filepath.Base(filePath)
+		extIndex := strings.LastIndex(fullfilename, ".")
+		filename := fullfilename[:extIndex]
+
+		files[filename] = getRecordFile(filePath, showID, filename)
 		return nil
 	})
 	return files
 }
 
-func getRecordFile(filePath string, showID string, fileID int) Showfile {
-	filename := filepath.Base(filePath)
-	name := strings.Split(filename, ".")[0]
-	return Showfile{name, getRecords(filePath, showID, fileID)}
+func getRecordFile(filePath string, showID string, filename string) Showfile {
+	return Showfile{filename, getRecords(filePath, showID, filename)}
 }
 
-func getRecords(fileCSV string, showID string, fileID int) []Record {
+func getRecords(fileCSV string, showID string, filename string) []Record {
 	csvfile, _ := os.Open(fileCSV)
 	defer csvfile.Close()
 	data := csv.NewReader(csvfile)
@@ -116,7 +118,7 @@ func getRecords(fileCSV string, showID string, fileID int) []Record {
 	recordsData, _ := data.ReadAll()
 	records := make([]Record, len(recordsData))
 	for i, d := range recordsData {
-		id := fmt.Sprintf("%s.%d.%d", showID, fileID, i)
+		id := fmt.Sprintf("%s.%s.%d", showID, filename, i)
 		a := Line{d[0], d[1], d[2]}
 		b := Line{d[3], d[4], d[5]}
 		r := Record{id, a, b}
@@ -130,11 +132,11 @@ func (data *Data) WalkRecords(f WalkFunc) {
 	for showID, show := range data.Shows {
 		fmt.Printf("Indexing %v\n", show.Title)
 		start := time.Now()
-		for fileID, file := range show.Files {
+		for filename, file := range show.Files {
 			fmt.Printf("Indexing episode %v... ", file.Name)
 			startFile := time.Now()
 			for _, record := range file.Records {
-				f(showID, fileID, record)
+				f(showID, filename, record)
 			}
 			elapsedFile := time.Since(startFile)
 			fmt.Printf("(%v)\n", elapsedFile)
@@ -145,13 +147,14 @@ func (data *Data) WalkRecords(f WalkFunc) {
 }
 
 func parseRecordID(s string) *recordID {
-	parts := strings.Split(s, ".")
-	fileID, _ := strconv.Atoi(parts[1])
-	subID, _ := strconv.Atoi(parts[2])
+	filenameStartIndex := strings.Index(s, ".")
+	filenameEndIndex := strings.LastIndex(s, ".")
+
+	subID, _ := strconv.Atoi(s[filenameEndIndex+1:])
 
 	return &recordID{
-		showID: parts[0],
-		fileID: fileID,
-		subID:  subID,
+		showID:   s[:filenameStartIndex],
+		filename: s[filenameStartIndex+1 : filenameEndIndex],
+		subID:    subID,
 	}
 }
