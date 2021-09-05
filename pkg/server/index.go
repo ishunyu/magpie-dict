@@ -84,7 +84,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 
 	fmt.Println("Indexing started.")
 	start := time.Now()
-	data.WalkRecords(func(showID string, fileID int, record Record) {
+	data.WalkRecords(func(showID string, filename string, record Record) {
 		bMessage := message{record.ID, showID, record.A.Text, record.B.Text}
 		bIndex.Index(bMessage.ID, bMessage)
 	})

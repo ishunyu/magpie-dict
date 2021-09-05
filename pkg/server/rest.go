@@ -65,8 +65,14 @@ func handleShows(w http.ResponseWriter, req *http.Request, index *Index) {
 	start := time.Now()
 	shows := make([]*showResponse, 0, len(index.Data.Shows))
 	for _, show := range index.Data.Shows {
-		file := show.Files[len(show.Files)-1]
-		showRes := showResponse{show.Title, file.Name}
+		file := ""
+		for filename := range show.Files {
+			if filename > file {
+				file = filename
+			}
+		}
+
+		showRes := showResponse{show.Title, file}
 		shows = append(shows, &showRes)
 	}
 	showsRes := showsResponse{shows}
@@ -119,15 +125,15 @@ func handleSubs(w http.ResponseWriter, req *http.Request, index *Index) {
 
 	rID := parseRecordID(id)
 	show := index.Data.Shows[rID.showID]
-	file := &show.Files[rID.fileID]
+	file := show.Files[rID.filename]
 
 	var record *Record
 	response := &searchResponseData{show.Title, file.Name, make([]*Record, 0)}
 
 	if expandType {
-		record = GetRecord(file, rID.subID-1)
+		record = GetRecord(&file, rID.subID-1)
 	} else {
-		record = GetRecord(file, rID.subID+1)
+		record = GetRecord(&file, rID.subID+1)
 	}
 
 	if record != nil {
@@ -210,7 +216,7 @@ func retreiveResponse(data *Data, result *recordID) *searchResponseData {
 	}
 
 	show := data.Shows[result.showID]
-	file := show.Files[result.fileID]
+	file := show.Files[result.filename]
 	records := retreiveRecordContext(&file, result.subID)
 
 	return &searchResponseData{show.Title, file.Name, records}
