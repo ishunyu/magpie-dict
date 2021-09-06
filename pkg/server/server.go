@@ -8,16 +8,15 @@ import (
 )
 
 func main() {
-	setupLogger()
 	config := GetConfig()
+	SetupLogger(config)
 	index := GetIndex(config)
 
-	setupRequestLogger(config)
 	http.Handle("/", http.FileServer(http.Dir(config.GetHtmlDir())))
-	http.HandleFunc("/shows", RequestLogHandler(ShowsHandler(index), config))
-	http.HandleFunc("/search", RequestLogHandler(GetSearchHandler(index), config))
-	http.HandleFunc("/subs", RequestLogHandler(SubsHandler(index), config))
-	http.HandleFunc("/comparefiles", RequestLogHandler(CompareHandler(config.TempPath, config.ComparePath, config.CompareVenvPath), config))
+	http.HandleFunc("/shows", RequestLogHandler(ShowsHandler(index)))
+	http.HandleFunc("/search", RequestLogHandler(GetSearchHandler(index)))
+	http.HandleFunc("/subs", RequestLogHandler(SubsHandler(index)))
+	http.HandleFunc("/comparefiles", RequestLogHandler(CompareHandler(config.TempPath, config.ComparePath, config.CompareVenvPath)))
 
 	port := config.GetPort()
 	url := fmt.Sprintf("%s:%d", config.Hostname, port)

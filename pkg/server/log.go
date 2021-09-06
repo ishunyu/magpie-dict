@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	timeFormat string = "2006-01-02 15:04:05.999 -0700"
+	timeFormat string = "2006-01-02 15:04:05.000 -0700"
 )
 
 var (
@@ -24,12 +24,16 @@ func RequestLogger() *log.Logger {
 	return requestLog
 }
 
-func setupLogger() {
+func SetupLogger(config *Config) {
+	fmt.Println("Setting up loggers")
 	log.SetFormatter(new(Formatter))
 	log.SetReportCaller(true)
+
+	SetupRequestLogger(config)
+	log.Info("Setting up loggers complete")
 }
 
-func setupRequestLogger(config *Config) {
+func SetupRequestLogger(config *Config) {
 	if requestLog != nil {
 		return
 	}
@@ -39,7 +43,8 @@ func setupRequestLogger(config *Config) {
 	path := filepath.Join(config.TempPath, "requests.log")
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Errorf("Problem trying to open %s for logging.", path)
+		fmt.Println("Problem trying to open %s for logging.", path)
+		os.Exit(1)
 	}
 	requestLog.SetOutput(f)
 

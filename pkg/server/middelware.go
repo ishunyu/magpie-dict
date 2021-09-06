@@ -11,7 +11,7 @@ import (
 type RequestStats map[string]interface{}
 type HandlerFunc func(http.ResponseWriter, *http.Request, *RequestStats)
 
-func RequestLogHandler(f HandlerFunc, config *Config) http.HandlerFunc {
+func RequestLogHandler(f HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		request_id := uuid.New().String()
 		stats := &RequestStats{

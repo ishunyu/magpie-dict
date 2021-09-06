@@ -2,11 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Config used for storing app configuration
@@ -23,15 +22,16 @@ type Config struct {
 
 // GetConfig returns config data based in json
 func GetConfig() *Config {
+	fmt.Println("Loading config")
 	args := os.Args[1:]
 	if len(args) == 0 {
-		log.Error("Missing configuration file argument.")
+		fmt.Println("Missing configuration file argument.")
 		os.Exit(1)
 	}
 
 	jsonFile, err := os.Open(args[0])
 	if err != nil {
-		log.Error(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	defer jsonFile.Close()
@@ -41,8 +41,7 @@ func GetConfig() *Config {
 	json.Unmarshal([]byte(bytes), &config)
 
 	configStr, _ := json.MarshalIndent(config, "", "  ")
-
-	log.Infof(string(configStr))
+	fmt.Printf("Config loaded: %s\n", string(configStr))
 
 	return &config
 }
