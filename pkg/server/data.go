@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Line struct {
@@ -66,13 +68,12 @@ func GetData(dataPath string) Data {
 }
 
 func getShow(showPath string) Show {
-	fmt.Print("Loading show data: " + showPath)
+	log.Info("Finding show data. path: " + showPath)
 
 	manifestPath := filepath.Join(showPath, "manifest.json")
 	manifestFile, err := os.Open(manifestPath)
 	if err != nil {
-		fmt.Println()
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(1)
 	}
 	defer manifestFile.Close()
@@ -83,8 +84,7 @@ func getShow(showPath string) Show {
 	id := filepath.Base(showPath)
 	title := manifestData.Title
 
-	fmt.Print(", id: " + id)
-	fmt.Println(", title: " + title)
+	log.Infof("Loading show data. id: %s, title: %s", id, title)
 
 	return Show{id, title, getRecordFiles(filepath.Join(showPath, "data"), id)}
 }

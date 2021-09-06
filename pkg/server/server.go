@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+	setupLogger()
 	config := GetConfig()
 	index := GetIndex(config)
 
@@ -17,6 +20,8 @@ func main() {
 
 	port := config.GetPort()
 	url := fmt.Sprintf("%s:%d", config.Hostname, port)
-	fmt.Printf("Starting server on %v\n", url)
-	http.ListenAndServe(url, nil)
+	log.Infof("Starting server on %v", url)
+	err := http.ListenAndServe(url, nil)
+
+	log.Error(err)
 }

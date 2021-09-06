@@ -1,17 +1,17 @@
 package wholesentence
 
 import (
-	"fmt"
-
 	"github.com/blevesearch/bleve/analysis"
 	"github.com/blevesearch/bleve/analysis/tokenizer/single"
 	"github.com/blevesearch/bleve/registry"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const Analyzer = "wholesentence_analyzer"
 
 func AnalyzerConstructor(config map[string]interface{}, cache *registry.Cache) (*analysis.Analyzer, error) {
-	defer fmt.Println("wholesentence analyzer initialized.")
+	defer log.Info("wholesentence analyzer initialized.")
 	tokenizer, err := cache.TokenizerNamed(single.Name)
 	if err != nil {
 		return nil, err

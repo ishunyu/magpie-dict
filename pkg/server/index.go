@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -10,6 +9,8 @@ import (
 
 	"github.com/ishunyu/magpie-dict/pkg/analysis/singletoken"
 	"github.com/ishunyu/magpie-dict/pkg/analysis/wholesentence"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Index struct {
@@ -51,7 +52,7 @@ func (index *Index) Search(searchText string, showID string) []*recordID {
 	bSearchRequest := bleve.NewSearchRequest(newQuery)
 	bSearchResult, err := (*index.BIndex).Search(bSearchRequest)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return nil
 	}
 
@@ -71,10 +72,10 @@ func (index *Index) Search(searchText string, showID string) []*recordID {
 func indexData(indexPath string, data *Data) *bleve.Index {
 	bIndex, err := bleve.Open(indexPath)
 	if err == nil {
-		fmt.Println("Index found.")
+		log.Info("Index found.")
 		return &bIndex
 	}
-	fmt.Println("Index not found.")
+	log.Info("Index not found.")
 
 	mapping := getNewMapping()
 	bIndex, err = bleve.New(indexPath, mapping)
@@ -82,7 +83,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 		panic(err)
 	}
 
-	fmt.Println("Indexing started.")
+	log.Info("Indexing started.")
 	start := time.Now()
 	data.WalkRecords(func(showID string, filename string, record Record) {
 		bMessage := message{record.ID, showID, record.A.Text, record.B.Text}
@@ -90,7 +91,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 	})
 
 	elapsed := time.Since(start)
-	fmt.Printf("Indexing completed. (%v)\n", elapsed)
+	log.Infof("Indexing completed. (%v)\n", elapsed)
 	return &bIndex
 }
 
