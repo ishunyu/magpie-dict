@@ -37,32 +37,31 @@ type compareResponse struct {
 	Output string `json:"output"`
 }
 
-func ShowsHandler(index *Index) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleShows(w, req, index)
+func ShowsHandler(index *Index) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleShows(w, req, index, stats)
 	}
 }
 
-func GetSearchHandler(index *Index) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleSearch(w, req, index)
+func GetSearchHandler(index *Index) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleSearch(w, req, index, stats)
 	}
 }
 
-func SubsHandler(index *Index) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleSubs(w, req, index)
+func SubsHandler(index *Index) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleSubs(w, req, index, stats)
 	}
 }
 
-func CompareHandler(tmpPath string, comparePath string, compareVenvPath string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleCompare(w, req, tmpPath, comparePath, compareVenvPath)
+func CompareHandler(tmpPath string, comparePath string, compareVenvPath string) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleCompare(w, req, tmpPath, comparePath, compareVenvPath, stats)
 	}
 }
 
-func handleShows(w http.ResponseWriter, req *http.Request, index *Index) {
-	start := time.Now()
+func handleShows(w http.ResponseWriter, req *http.Request, index *Index, stats *RequestStats) {
 	shows := make([]*showResponse, 0, len(index.Data.Shows))
 	for _, show := range index.Data.Shows {
 		file := ""
@@ -80,27 +79,22 @@ func handleShows(w http.ResponseWriter, req *http.Request, index *Index) {
 	data, _ := json.Marshal(showsRes)
 	fmt.Fprintf(w, string(data))
 
-	elapsed := time.Since(start)
-	fmt.Println("/shows " + fmt.Sprintf(",%s", elapsed))
+	stats.Add("shows", shows)
 }
 
-func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
-	start := time.Now()
-
+func handleSearch(w http.ResponseWriter, req *http.Request, index *Index, stats *RequestStats) {
 	searchText := req.FormValue("searchText")
 	showID := req.FormValue("showID")
 
-	logMessage := "/search " + searchText
-	if showID != "" {
-		logMessage += " (" + showID + ")"
-	}
+	stats.Add("searchText", searchText)
+	stats.Add("showID", showID)
 
 	searchResults := index.Search(searchText, showID)
 	if searchResults == nil {
 		searchResults = make([]*recordID, 0)
 	}
 
-	logMessage += fmt.Sprintf(",%d", len(searchResults))
+	stats.Add("numResults", len(searchResults))
 
 	searchResults = searchResults[0:Min(len(searchResults), 10)]
 	response := searchResponse{make([]*searchResponseData, len(searchResults))}
@@ -110,18 +104,14 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 
 	data, _ := json.Marshal(response)
 	fmt.Fprintf(w, string(data))
-
-	elapsed := time.Since(start)
-	logMessage += fmt.Sprintf(",%s", elapsed)
-
-	fmt.Println(logMessage)
 }
 
-func handleSubs(w http.ResponseWriter, req *http.Request, index *Index) {
+func handleSubs(w http.ResponseWriter, req *http.Request, index *Index, stats *RequestStats) {
 	id := req.FormValue("id")
 	expandType, _ := strconv.ParseBool(req.FormValue("type"))
 
-	fmt.Println("/subs id:", id, "type:", expandType)
+	stats.Add("recordID", id)
+	stats.Add("expandType", expandType)
 
 	rID := parseRecordID(id)
 	show := index.Data.Shows[rID.showID]
@@ -144,7 +134,7 @@ func handleSubs(w http.ResponseWriter, req *http.Request, index *Index) {
 	fmt.Fprintf(w, string(data))
 }
 
-func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comparePath string, compareVenvPath string) {
+func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comparePath string, compareVenvPath string, stats *RequestStats) {
 	compareDir := filepath.Join(tmpDir, "compare")
 	os.MkdirAll(compareDir, 0700)
 	ms := time.Now().UnixNano() / int64(time.Millisecond)

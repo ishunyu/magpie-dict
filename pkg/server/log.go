@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -12,12 +13,39 @@ const (
 	timeFormat string = "2006-01-02 15:04:05.999 -0700"
 )
 
+var (
+	requestLog *log.Logger
+)
+
 type Formatter struct {
+}
+
+func RequestLogger() *log.Logger {
+	return requestLog
 }
 
 func setupLogger() {
 	log.SetFormatter(new(Formatter))
 	log.SetReportCaller(true)
+}
+
+func setupRequestLogger(config *Config) {
+	if requestLog != nil {
+		return
+	}
+
+	requestLog = log.New()
+
+	path := filepath.Join(config.TempPath, "requests.log")
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Errorf("Problem trying to open %s for logging.", path)
+	}
+	requestLog.SetOutput(f)
+
+	requestLog.SetFormatter(&log.JSONFormatter{
+		TimestampFormat: timeFormat,
+	})
 }
 
 func (f *Formatter) Format(entry *log.Entry) ([]byte, error) {

@@ -12,11 +12,12 @@ func main() {
 	config := GetConfig()
 	index := GetIndex(config)
 
+	setupRequestLogger(config)
 	http.Handle("/", http.FileServer(http.Dir(config.GetHtmlDir())))
-	http.HandleFunc("/shows", ShowsHandler(index))
-	http.HandleFunc("/search", GetSearchHandler(index))
-	http.HandleFunc("/subs", SubsHandler(index))
-	http.HandleFunc("/comparefiles", CompareHandler(config.TempPath, config.ComparePath, config.CompareVenvPath))
+	http.HandleFunc("/shows", RequestLogHandler(ShowsHandler(index), config))
+	http.HandleFunc("/search", RequestLogHandler(GetSearchHandler(index), config))
+	http.HandleFunc("/subs", RequestLogHandler(SubsHandler(index), config))
+	http.HandleFunc("/comparefiles", RequestLogHandler(CompareHandler(config.TempPath, config.ComparePath, config.CompareVenvPath), config))
 
 	port := config.GetPort()
 	url := fmt.Sprintf("%s:%d", config.Hostname, port)
