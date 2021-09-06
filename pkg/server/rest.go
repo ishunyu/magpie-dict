@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type showsResponse struct {
@@ -135,20 +137,19 @@ func handleSubs(w http.ResponseWriter, req *http.Request, index *Index, stats *R
 }
 
 func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comparePath string, compareVenvPath string, stats *RequestStats) {
+	logger := log.WithField("request_id", stats.RequestID())
+
 	compareDir := filepath.Join(tmpDir, "compare")
 	os.MkdirAll(compareDir, 0700)
 	ms := time.Now().UnixNano() / int64(time.Millisecond)
 	dir, _ := ioutil.TempDir(compareDir, strconv.FormatInt(ms, 10)+"_")
-	fmt.Println(dir)
 	defer os.RemoveAll(dir)
 
-	chinese_file := getAndSaveFile(req, "CHINESE_FILE", dir, "chinese_file.sbv")
-	original_file := getAndSaveFile(req, "ORIGINAL_FILE", dir, "original_file.sbv")
-	revised_file := getAndSaveFile(req, "REVISED_FILE", dir, "revised_file.sbv")
+	stats.Add("dir", dir)
 
-	fmt.Println("chinese_file: ", chinese_file)
-	fmt.Println("original_file: ", original_file)
-	fmt.Println("revised_file", revised_file)
+	chinese_file := getAndSaveFile(req, "CHINESE_FILE", dir, "chinese_file.sbv", logger)
+	original_file := getAndSaveFile(req, "ORIGINAL_FILE", dir, "original_file.sbv", logger)
+	revised_file := getAndSaveFile(req, "REVISED_FILE", dir, "revised_file.sbv", logger)
 
 	if original_file == "" || revised_file == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -162,38 +163,38 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	} else {
 		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s %s", ".", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file, chinese_file)
 	}
-	fmt.Println(shCmd)
+	logger.Infof("executing: \"%s\"", shCmd)
 	cmd := exec.Command("/bin/sh", "-c", shCmd)
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		return
 	}
-	fmt.Println(output_file)
 
 	bytes, err := ioutil.ReadFile(output_file)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		return
 	}
 
 	w.Write(bytes)
 }
 
-func getAndSaveFile(req *http.Request, key string, dir string, filename string) string {
+func getAndSaveFile(req *http.Request, key string, dir string, filename string, logger *log.Entry) string {
 	formFile, _, err := req.FormFile(key)
 	if err != nil {
-		fmt.Println(err)
+		logger.Warn(err, " (", filename, ")")
 		return ""
 	}
+
 	bytes, _ := ioutil.ReadAll(formFile)
 	file := filepath.Join(dir, filename)
 	err = ioutil.WriteFile(file, bytes, 0700)
 	if err != nil {
-		fmt.Println(err)
+		logger.Warn(err, " (", filename, ")")
 		return ""
 	}
 

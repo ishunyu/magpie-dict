@@ -13,18 +13,19 @@ type HandlerFunc func(http.ResponseWriter, *http.Request, *RequestStats)
 
 func RequestLogHandler(f HandlerFunc, config *Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		stats := &RequestStats{}
 		request_id := uuid.New().String()
+		stats := &RequestStats{
+			"request_id": request_id,
+		}
 
 		timeStart := time.Now()
 		f(w, req, stats)
 		duration := time.Since(timeStart)
 
 		fields := log.Fields{
-			"client_ip":  req.RemoteAddr,
-			"request_id": request_id,
-			"endpoint":   req.URL.Path,
-			"duration":   duration.Milliseconds(),
+			"client_ip": req.RemoteAddr,
+			"endpoint":  req.URL.Path,
+			"duration":  duration.Milliseconds(),
 		}
 
 		var msg interface{} = nil
@@ -42,6 +43,10 @@ func RequestLogHandler(f HandlerFunc, config *Config) http.HandlerFunc {
 			RequestLogger().WithFields(fields).Info(msg)
 		}
 	}
+}
+
+func (stats *RequestStats) RequestID() string {
+	return (*stats)["request_id"].(string)
 }
 
 func (stats *RequestStats) Add(key string, value interface{}) {

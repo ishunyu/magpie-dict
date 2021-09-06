@@ -63,7 +63,12 @@ func (f *Formatter) Format(entry *log.Entry) ([]byte, error) {
 		callerLine = caller.Line
 	}
 
-	msg := fmt.Sprintf("%v [%c] %s:%d %s\n", time, level, callerFile, callerLine, entry.Message)
+	requestID := ""
+	if val, ok := entry.Data["request_id"]; ok {
+		requestID = fmt.Sprintf(" [%v]", val)
+	}
+
+	msg := fmt.Sprintf("%v [%c] %s:%d %s%s\n", time, level, callerFile, callerLine, entry.Message, requestID)
 
 	return []byte(msg), nil
 }
