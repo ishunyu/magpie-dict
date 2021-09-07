@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type showsResponse struct {
@@ -37,32 +39,31 @@ type compareResponse struct {
 	Output string `json:"output"`
 }
 
-func ShowsHandler(index *Index) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleShows(w, req, index)
+func ShowsHandler(index *Index) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleShows(w, req, index, stats)
 	}
 }
 
-func GetSearchHandler(index *Index) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleSearch(w, req, index)
+func GetSearchHandler(index *Index) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleSearch(w, req, index, stats)
 	}
 }
 
-func SubsHandler(index *Index) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleSubs(w, req, index)
+func SubsHandler(index *Index) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleSubs(w, req, index, stats)
 	}
 }
 
-func CompareHandler(tmpPath string, comparePath string, compareVenvPath string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		handleCompare(w, req, tmpPath, comparePath, compareVenvPath)
+func CompareHandler(tmpPath string, comparePath string, compareVenvPath string) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request, stats *RequestStats) {
+		handleCompare(w, req, tmpPath, comparePath, compareVenvPath, stats)
 	}
 }
 
-func handleShows(w http.ResponseWriter, req *http.Request, index *Index) {
-	start := time.Now()
+func handleShows(w http.ResponseWriter, req *http.Request, index *Index, stats *RequestStats) {
 	shows := make([]*showResponse, 0, len(index.Data.Shows))
 	for _, show := range index.Data.Shows {
 		file := ""
@@ -80,27 +81,22 @@ func handleShows(w http.ResponseWriter, req *http.Request, index *Index) {
 	data, _ := json.Marshal(showsRes)
 	fmt.Fprintf(w, string(data))
 
-	elapsed := time.Since(start)
-	fmt.Println("/shows " + fmt.Sprintf(",%s", elapsed))
+	stats.Add("shows", shows)
 }
 
-func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
-	start := time.Now()
-
+func handleSearch(w http.ResponseWriter, req *http.Request, index *Index, stats *RequestStats) {
 	searchText := req.FormValue("searchText")
 	showID := req.FormValue("showID")
 
-	logMessage := "/search " + searchText
-	if showID != "" {
-		logMessage += " (" + showID + ")"
-	}
+	stats.Add("searchText", searchText)
+	stats.Add("showID", showID)
 
 	searchResults := index.Search(searchText, showID)
 	if searchResults == nil {
 		searchResults = make([]*recordID, 0)
 	}
 
-	logMessage += fmt.Sprintf(",%d", len(searchResults))
+	stats.Add("numResults", len(searchResults))
 
 	searchResults = searchResults[0:Min(len(searchResults), 10)]
 	response := searchResponse{make([]*searchResponseData, len(searchResults))}
@@ -110,18 +106,14 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index) {
 
 	data, _ := json.Marshal(response)
 	fmt.Fprintf(w, string(data))
-
-	elapsed := time.Since(start)
-	logMessage += fmt.Sprintf(",%s", elapsed)
-
-	fmt.Println(logMessage)
 }
 
-func handleSubs(w http.ResponseWriter, req *http.Request, index *Index) {
+func handleSubs(w http.ResponseWriter, req *http.Request, index *Index, stats *RequestStats) {
 	id := req.FormValue("id")
 	expandType, _ := strconv.ParseBool(req.FormValue("type"))
 
-	fmt.Println("/subs id:", id, "type:", expandType)
+	stats.Add("recordID", id)
+	stats.Add("expandType", expandType)
 
 	rID := parseRecordID(id)
 	show := index.Data.Shows[rID.showID]
@@ -144,21 +136,27 @@ func handleSubs(w http.ResponseWriter, req *http.Request, index *Index) {
 	fmt.Fprintf(w, string(data))
 }
 
-func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comparePath string, compareVenvPath string) {
+func handleCompare(
+	w http.ResponseWriter,
+	req *http.Request,
+	tmpDir string,
+	comparePath string,
+	compareVenvPath string,
+	stats *RequestStats) {
+
+	logger := log.WithField(KEY_REQUEST_ID, stats.RequestID())
+
 	compareDir := filepath.Join(tmpDir, "compare")
 	os.MkdirAll(compareDir, 0700)
 	ms := time.Now().UnixNano() / int64(time.Millisecond)
 	dir, _ := ioutil.TempDir(compareDir, strconv.FormatInt(ms, 10)+"_")
-	fmt.Println(dir)
 	defer os.RemoveAll(dir)
 
-	chinese_file := getAndSaveFile(req, "CHINESE_FILE", dir, "chinese_file.sbv")
-	original_file := getAndSaveFile(req, "ORIGINAL_FILE", dir, "original_file.sbv")
-	revised_file := getAndSaveFile(req, "REVISED_FILE", dir, "revised_file.sbv")
+	stats.Add("dir", dir)
 
-	fmt.Println("chinese_file: ", chinese_file)
-	fmt.Println("original_file: ", original_file)
-	fmt.Println("revised_file", revised_file)
+	chinese_file := getAndSaveFile(req, "CHINESE_FILE", dir, "chinese_file.sbv", logger)
+	original_file := getAndSaveFile(req, "ORIGINAL_FILE", dir, "original_file.sbv", logger)
+	revised_file := getAndSaveFile(req, "REVISED_FILE", dir, "revised_file.sbv", logger)
 
 	if original_file == "" || revised_file == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -172,38 +170,38 @@ func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comp
 	} else {
 		shCmd = fmt.Sprintf("%s %s %s %s %s %s %s %s %s %s", ".", compareVenvPath, ";", "python", comparePath, "-o", output_file, original_file, revised_file, chinese_file)
 	}
-	fmt.Println(shCmd)
+	logger.Infof("executing: \"%s\"", shCmd)
 	cmd := exec.Command("/bin/sh", "-c", shCmd)
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		return
 	}
-	fmt.Println(output_file)
 
 	bytes, err := ioutil.ReadFile(output_file)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		return
 	}
 
 	w.Write(bytes)
 }
 
-func getAndSaveFile(req *http.Request, key string, dir string, filename string) string {
+func getAndSaveFile(req *http.Request, key string, dir string, filename string, logger *log.Entry) string {
 	formFile, _, err := req.FormFile(key)
 	if err != nil {
-		fmt.Println(err)
+		logger.Warn(err, " (", filename, ")")
 		return ""
 	}
+
 	bytes, _ := ioutil.ReadAll(formFile)
 	file := filepath.Join(dir, filename)
 	err = ioutil.WriteFile(file, bytes, 0700)
 	if err != nil {
-		fmt.Println(err)
+		logger.Warn(err, " (", filename, ")")
 		return ""
 	}
 

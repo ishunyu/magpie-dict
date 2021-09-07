@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ishunyu/magpie-dict/src/subtitle"
+	"github.com/ishunyu/magpie-dict/pkg/subtitle"
 )
 
 var regex = regexp.MustCompile(`\s*(\d+:\d{2}:\d{2}.\d{3}),(\d+:\d{2}:\d{2}.\d{3})`)

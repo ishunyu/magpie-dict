@@ -22,6 +22,7 @@ type Config struct {
 
 // GetConfig returns config data based in json
 func GetConfig() *Config {
+	fmt.Println("Loading config")
 	args := os.Args[1:]
 	if len(args) == 0 {
 		fmt.Println("Missing configuration file argument.")
@@ -39,7 +40,8 @@ func GetConfig() *Config {
 	var config Config
 	json.Unmarshal([]byte(bytes), &config)
 
-	fmt.Printf("config: %+v\n", config)
+	configStr, _ := json.MarshalIndent(config, "", "  ")
+	fmt.Printf("Config loaded: %s\n", string(configStr))
 
 	return &config
 }
