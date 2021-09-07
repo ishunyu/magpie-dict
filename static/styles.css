@@ -128,11 +128,11 @@ button:disabled {
 }
 
 #show-data {
-	position: absolute;
-    right: 10px;
-    bottom: 10px;
-    font-size: small;
-    color: grey;
+	position: fixed;
+	right: 10px;
+	bottom: 10px;
+	font-size: small;
+	color: grey;
 }
 
 #output {
