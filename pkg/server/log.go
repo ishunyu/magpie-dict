@@ -10,7 +10,9 @@ import (
 )
 
 const (
-	timeFormat string = "2006-01-02 15:04:05.000 -0700"
+	FORMAT_TIME    string = "2006-01-02 15:04:05.000 -0700"
+	KEY_REQUEST_ID string = "request_id"
+	LOG_REQUESTS   string = "requests.log"
 )
 
 var (
@@ -40,21 +42,21 @@ func SetupRequestLogger(config *Config) {
 
 	requestLog = log.New()
 
-	path := filepath.Join(config.TempPath, "requests.log")
+	path := filepath.Join(config.TempPath, LOG_REQUESTS)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		fmt.Println("Problem trying to open %s for logging.", path)
+		fmt.Printf("Problem trying to open %s for logging.\n", path)
 		os.Exit(1)
 	}
 	requestLog.SetOutput(f)
 
 	requestLog.SetFormatter(&log.JSONFormatter{
-		TimestampFormat: timeFormat,
+		TimestampFormat: FORMAT_TIME,
 	})
 }
 
 func (f *Formatter) Format(entry *log.Entry) ([]byte, error) {
-	time := entry.Time.Format(timeFormat)
+	time := entry.Time.Format(FORMAT_TIME)
 	level := strings.ToUpper(entry.Level.String())[0]
 
 	callerFile := ""
@@ -69,7 +71,7 @@ func (f *Formatter) Format(entry *log.Entry) ([]byte, error) {
 	}
 
 	requestID := ""
-	if val, ok := entry.Data["request_id"]; ok {
+	if val, ok := entry.Data[KEY_REQUEST_ID]; ok {
 		requestID = fmt.Sprintf(" [%v]", val)
 	}
 

@@ -136,8 +136,15 @@ func handleSubs(w http.ResponseWriter, req *http.Request, index *Index, stats *R
 	fmt.Fprintf(w, string(data))
 }
 
-func handleCompare(w http.ResponseWriter, req *http.Request, tmpDir string, comparePath string, compareVenvPath string, stats *RequestStats) {
-	logger := log.WithField("request_id", stats.RequestID())
+func handleCompare(
+	w http.ResponseWriter,
+	req *http.Request,
+	tmpDir string,
+	comparePath string,
+	compareVenvPath string,
+	stats *RequestStats) {
+
+	logger := log.WithField(KEY_REQUEST_ID, stats.RequestID())
 
 	compareDir := filepath.Join(tmpDir, "compare")
 	os.MkdirAll(compareDir, 0700)

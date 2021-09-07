@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -13,26 +14,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Index struct {
-	Data   Data
-	BIndex *bleve.Index
-}
-
-type message struct {
-	ID     string
-	ShowID string
-	AText  string
-	BText  string
-}
-
-func (msg message) Type() string {
-	return "message"
-}
-
 func GetIndex(config *Config) *Index {
 	data := GetData(config.DataPath)
 	index := indexData(config.IndexPath, &data)
 	return &Index{data, index}
+}
+
+type Index struct {
+	Data   Data
+	BIndex *bleve.Index
 }
 
 func (index *Index) Search(searchText string, showID string) []*recordID {
@@ -69,6 +59,50 @@ func (index *Index) Search(searchText string, showID string) []*recordID {
 	return searchResults
 }
 
+type message struct {
+	ID     string
+	ShowID string
+	AText  string
+	BText  string
+}
+
+func (msg message) Type() string {
+	return "message"
+}
+
+type indexingDataVisitor struct {
+	bIndex *bleve.Index
+}
+
+func (visitor *indexingDataVisitor) start() {
+	log.Info("===== Indexing STARTED =====")
+}
+
+func (visitor *indexingDataVisitor) end(elapsed time.Duration) {
+	log.Infof("===== Indexing COMPLETE (%v) =====", elapsed.Truncate(time.Millisecond))
+}
+
+func (visitor *indexingDataVisitor) startShow(show *Show) {
+	log.Infof("Indexing \"%v\" episodes", show.Title)
+}
+
+func (visitor *indexingDataVisitor) endShow(show *Show, elapsed time.Duration) {
+	log.Infof("Indexing \"%s\" episodes DONE (%v)", show.Title, elapsed.Truncate(time.Millisecond))
+}
+
+func (visitor *indexingDataVisitor) startFile(show *Show, file *Showfile) {
+	log.Infof("Indexing \"%v\" episode %v...", show.Title, file.Name)
+}
+
+func (visitor *indexingDataVisitor) endFile(show *Show, file *Showfile, elapsed time.Duration) {
+	log.Infof("Indexing \"%v\" episode %s...DONE (%v)", show.Title, file.Name, elapsed.Truncate(time.Millisecond))
+}
+
+func (visitor *indexingDataVisitor) visitRecord(show *Show, file *Showfile, record *Record) {
+	bMessage := message{record.ID, show.ID, record.A.Text, record.B.Text}
+	(*visitor.bIndex).Index(bMessage.ID, bMessage)
+}
+
 func indexData(indexPath string, data *Data) *bleve.Index {
 	bIndex, err := bleve.Open(indexPath)
 	if err == nil {
@@ -80,18 +114,11 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 	mapping := getNewMapping()
 	bIndex, err = bleve.New(indexPath, mapping)
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		os.Exit(1)
 	}
 
-	log.Info("Indexing started.")
-	start := time.Now()
-	data.WalkRecords(func(showID string, filename string, record Record) {
-		bMessage := message{record.ID, showID, record.A.Text, record.B.Text}
-		bIndex.Index(bMessage.ID, bMessage)
-	})
-
-	elapsed := time.Since(start)
-	log.Infof("Indexing completed. (%v)\n", elapsed)
+	data.Visit(&indexingDataVisitor{&bIndex})
 	return &bIndex
 }
 
