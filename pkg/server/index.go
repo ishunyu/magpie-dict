@@ -109,7 +109,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 		log.Info("Index found.")
 		return &bIndex
 	}
-	log.Info("Index not found.")
+	log.Info("Index not found. Will index.")
 
 	mapping := getNewMapping()
 	bIndex, err = bleve.New(indexPath, mapping)
