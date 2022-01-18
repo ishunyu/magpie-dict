@@ -32,7 +32,7 @@ func SetupLogger(config *Config) {
 	log.SetReportCaller(true)
 
 	SetupRequestLogger(config)
-	log.Info("Setting up loggers complete")
+	log.Info("Logger setup complete")
 }
 
 func SetupRequestLogger(config *Config) {
