@@ -73,7 +73,7 @@ func (msg message) Type() string {
 
 type indexingDataVisitor struct {
 	bIndex *bleve.Index
-	added  *IndexInfo
+	added  *IndexManifest
 }
 
 func (visitor *indexingDataVisitor) start() {
@@ -116,7 +116,19 @@ func (visitor *indexingDataVisitor) visitRecord(show *Show, file *Showfile, reco
 }
 
 func indexData(indexPath string, data *Data) *bleve.Index {
+	indexManifestPath := filepath.Join(indexPath, "manifest.json")
 	bleveIndexPath := filepath.Join(indexPath, "bleve")
+
+	existingManifest, err := LoadIndexManifestFromFile(indexManifestPath)
+	if err == nil {
+		log.Info("Existing index manifest found.")
+		log.Info("existing: ", existingManifest)
+	} else {
+		log.Info("No index manifest found.")
+		os.RemoveAll(bleveIndexPath)
+		existingManifest = NewIndexManifest()
+	}
+
 	bIndex, err := bleve.Open(bleveIndexPath)
 	if err == nil {
 		log.Info("Existing index found.")
@@ -131,27 +143,19 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 		}
 	}
 
-	indexInfoPath := filepath.Join(indexPath, "info.json")
-	existingInfo, err := LoadFromFile(indexInfoPath)
-	if err == nil {
-		log.Info("Existing index info found.")
-	} else {
-		log.Info("No index info found.")
-		existingInfo = NewIndexInfo()
-	}
-	dataInfo := TransformToIndexInfo(data)
-	added, removed := existingInfo.Compare(dataInfo)
-	log.Info("existing: ", existingInfo)
-	log.Info("data: ", dataInfo)
+	newManifest := GetIndexManifest(data)
+	log.Info("data: ", newManifest)
+
+	added, removed := existingManifest.Compare(newManifest)
 	log.Info("added: ", added)
 	log.Info("removed: ", removed)
 
 	data.Visit(&indexingDataVisitor{&bIndex, added})
-	err = dataInfo.SaveToFile(indexInfoPath)
+	err = newManifest.SaveToFile(indexManifestPath)
 	if err != nil {
-		log.Warn("Failed to save/update index info file.")
+		log.Warn("Failed to save/update index manifest file.")
 	} else {
-		log.Info("Index info file updated.")
+		log.Info("Index manifest file updated.")
 	}
 
 	return &bIndex
