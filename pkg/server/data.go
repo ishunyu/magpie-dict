@@ -141,41 +141,41 @@ func parseRecordID(s string) *recordID {
 
 type DataVisitor interface {
 	start()
-	end(time.Duration)
+	end(time.Time)
 	startShow(*Show) bool
-	endShow(*Show, time.Duration)
+	endShow(*Show, time.Time)
 	startFile(*Show, *Showfile) bool
-	endFile(*Show, *Showfile, time.Duration)
+	endFile(*Show, *Showfile, time.Time)
 	visitRecord(*Show, *Showfile, *Record)
 }
 
 func (data *Data) Visit(visitor DataVisitor) {
 	visitor.start()
-	timer := time.Now()
+	start := time.Now()
 
 	for _, show := range data.Shows {
 		show.visit(visitor)
 	}
 
-	visitor.end(time.Since(timer))
+	visitor.end(start)
 }
 
 func (show *Show) visit(visitor DataVisitor) {
-	timer := time.Now()
+	start := time.Now()
 	if visitor.startShow(show) {
 		for _, file := range show.Files {
 			file.visit(visitor, show)
 		}
-		visitor.endShow(show, time.Since(timer))
+		visitor.endShow(show, start)
 	}
 }
 
 func (file *Showfile) visit(visitor DataVisitor, show *Show) {
-	timer := time.Now()
+	start := time.Now()
 	if visitor.startFile(show, file) {
 		for _, record := range file.Records {
 			visitor.visitRecord(show, file, &record)
 		}
-		visitor.endFile(show, file, time.Since(timer))
+		visitor.endFile(show, file, start)
 	}
 }

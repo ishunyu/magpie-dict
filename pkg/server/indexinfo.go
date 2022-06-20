@@ -7,71 +7,71 @@ import (
 
 var exists = struct{}{}
 
-type indexShowInfo struct {
+type IndexShowManifest struct {
 	Files map[string]struct{} `json:"files"`
 }
 
 // Records information about which files have already been indexed to reduce unnecessary re-index
-type IndexInfo struct {
-	Shows map[string]*indexShowInfo `json:"shows"`
+type IndexManifest struct {
+	Shows map[string]*IndexShowManifest `json:"shows"`
 }
 
-func newIndexShowInfo() *indexShowInfo {
-	return &indexShowInfo{make(map[string]struct{})}
+func newIndexShowManifest() *IndexShowManifest {
+	return &IndexShowManifest{make(map[string]struct{})}
 }
 
-func NewIndexInfo() *IndexInfo {
-	return &IndexInfo{make(map[string]*indexShowInfo)}
+func NewIndexManifest() *IndexManifest {
+	return &IndexManifest{make(map[string]*IndexShowManifest)}
 }
 
-func (info *IndexInfo) HasShow(showName string) bool {
-	_, c := info.Shows[showName]
+func (manifest *IndexManifest) HasShow(showName string) bool {
+	_, c := manifest.Shows[showName]
 	return c
 }
 
-func (info *IndexInfo) Add(showName string, fileName string) {
-	if !info.HasShow(showName) {
-		info.Shows[showName] = newIndexShowInfo()
+func (manifest *IndexManifest) Add(showName string, fileName string) {
+	if !manifest.HasShow(showName) {
+		manifest.Shows[showName] = newIndexShowManifest()
 	}
-	info.Shows[showName].Add(fileName)
+	manifest.Shows[showName].Add(fileName)
 }
 
-func (info *IndexInfo) Has(showName string, fileName string) bool {
-	show, c := info.Shows[showName]
+func (manifest *IndexManifest) Has(showName string, fileName string) bool {
+	show, c := manifest.Shows[showName]
 	if !c {
 		return false
 	}
 	return show.Has(fileName)
 }
 
-func (show *indexShowInfo) Add(fileName string) {
+func (show *IndexShowManifest) Add(fileName string) {
 	if !show.Has(fileName) {
 		show.Files[fileName] = exists
 	}
 }
 
-func (show *indexShowInfo) Has(fileName string) bool {
+func (show *IndexShowManifest) Has(fileName string) bool {
 	_, c := show.Files[fileName]
 	return c
 }
 
-func LoadFromFile(filePath string) (*IndexInfo, error) {
-	var info IndexInfo
-	err := JsonLoadFromFile(filePath, &info)
+func LoadIndexManifestFromFile(filePath string) (*IndexManifest, error) {
+	var manifest IndexManifest
+	err := JsonLoadFromFile(filePath, &manifest)
 	if err != nil {
 		return nil, err
 	}
 
-	return &info, nil
+	return &manifest, nil
 }
 
-func (info *IndexInfo) SaveToFile(filePath string) error {
-	return JsonWriteToFile(filePath, info)
+func (manifest *IndexManifest) SaveToFile(filePath string) error {
+	return JsonWriteToFile(filePath, manifest)
 }
 
-func (from *IndexInfo) Compare(to *IndexInfo) (added, removed *IndexInfo) {
-	added = NewIndexInfo()
-	removed = NewIndexInfo()
+func (from *IndexManifest) Compare(to *IndexManifest) (added, removed *IndexManifest) {
+	added = NewIndexManifest()
+	removed = NewIndexManifest()
 
 	for showName, show := range from.Shows {
 		for fileName := range show.Files {
@@ -92,35 +92,35 @@ func (from *IndexInfo) Compare(to *IndexInfo) (added, removed *IndexInfo) {
 	return
 }
 
-func (info *IndexInfo) String() string {
-	byte, err := json.MarshalIndent(info, "", "  ")
+func (manifest *IndexManifest) String() string {
+	byte, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return err.Error()
 	}
 	return string(byte)
 }
 
-func TransformToIndexInfo(data *Data) *IndexInfo {
-	visitor := &indexInfoDataVisitor{NewIndexInfo()}
+func GetIndexManifest(data *Data) *IndexManifest {
+	visitor := &indexManifestDataVisitor{NewIndexManifest()}
 	data.Visit(visitor)
-	return visitor.indexInfo
+	return visitor.manifest
 }
 
-type indexInfoDataVisitor struct {
-	indexInfo *IndexInfo
+type indexManifestDataVisitor struct {
+	manifest *IndexManifest
 }
 
-func (visitor *indexInfoDataVisitor) start()                                                    {}
-func (visitor *indexInfoDataVisitor) end(elapsed time.Duration)                                 {}
-func (visitor *indexInfoDataVisitor) endShow(show *Show, elapsed time.Duration)                 {}
-func (visitor *indexInfoDataVisitor) visitRecord(show *Show, file *Showfile, record *Record)    {}
-func (visitor *indexInfoDataVisitor) endFile(show *Show, file *Showfile, elapsed time.Duration) {}
+func (visitor *indexManifestDataVisitor) start()                                                 {}
+func (visitor *indexManifestDataVisitor) end(start time.Time)                                    {}
+func (visitor *indexManifestDataVisitor) endShow(show *Show, start time.Time)                    {}
+func (visitor *indexManifestDataVisitor) visitRecord(show *Show, file *Showfile, record *Record) {}
+func (visitor *indexManifestDataVisitor) endFile(show *Show, file *Showfile, start time.Time)    {}
 
-func (visitor *indexInfoDataVisitor) startShow(show *Show) bool {
+func (visitor *indexManifestDataVisitor) startShow(show *Show) bool {
 	return true
 }
 
-func (visitor *indexInfoDataVisitor) startFile(show *Show, file *Showfile) bool {
-	visitor.indexInfo.Add(show.ID, file.Name)
+func (visitor *indexManifestDataVisitor) startFile(show *Show, file *Showfile) bool {
+	visitor.manifest.Add(show.ID, file.Name)
 	return false
 }
