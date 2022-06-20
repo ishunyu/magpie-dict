@@ -142,32 +142,40 @@ func parseRecordID(s string) *recordID {
 type DataVisitor interface {
 	start()
 	end(time.Duration)
-	startShow(*Show)
+	startShow(*Show) bool
 	endShow(*Show, time.Duration)
-	startFile(*Show, *Showfile)
+	startFile(*Show, *Showfile) bool
 	endFile(*Show, *Showfile, time.Duration)
 	visitRecord(*Show, *Showfile, *Record)
 }
 
 func (data *Data) Visit(visitor DataVisitor) {
 	visitor.start()
-	timerData := time.Now()
+	timer := time.Now()
 
 	for _, show := range data.Shows {
-		visitor.startShow(&show)
-		timerShow := time.Now()
-
-		for _, file := range show.Files {
-			visitor.startFile(&show, &file)
-			timerFile := time.Now()
-			for _, record := range file.Records {
-				visitor.visitRecord(&show, &file, &record)
-			}
-			visitor.endFile(&show, &file, time.Since(timerFile))
-		}
-
-		visitor.endShow(&show, time.Since(timerShow))
+		show.visit(visitor)
 	}
 
-	visitor.end(time.Since(timerData))
+	visitor.end(time.Since(timer))
+}
+
+func (show *Show) visit(visitor DataVisitor) {
+	timer := time.Now()
+	if visitor.startShow(show) {
+		for _, file := range show.Files {
+			file.visit(visitor, show)
+		}
+		visitor.endShow(show, time.Since(timer))
+	}
+}
+
+func (file *Showfile) visit(visitor DataVisitor, show *Show) {
+	timer := time.Now()
+	if visitor.startFile(show, file) {
+		for _, record := range file.Records {
+			visitor.visitRecord(show, file, &record)
+		}
+		visitor.endFile(show, file, time.Since(timer))
+	}
 }

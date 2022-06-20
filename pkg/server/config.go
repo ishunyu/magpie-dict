@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -30,17 +29,12 @@ func GetConfig() *Config {
 
 	configFilePath := args[0]
 	fmt.Println("Loading config from ", configFilePath)
-
-	jsonFile, err := os.Open(configFilePath)
+	var config Config
+	err := JsonLoadFromFile(configFilePath, &config)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer jsonFile.Close()
-	bytes, _ := ioutil.ReadAll(jsonFile)
-
-	var config Config
-	json.Unmarshal([]byte(bytes), &config)
 
 	configStr, _ := json.MarshalIndent(config, "", "  ")
 	fmt.Printf("Config loaded: %s\n", string(configStr))
