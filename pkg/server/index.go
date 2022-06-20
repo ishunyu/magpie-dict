@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -72,30 +73,41 @@ func (msg message) Type() string {
 
 type indexingDataVisitor struct {
 	bIndex *bleve.Index
+	added  *IndexInfo
 }
 
 func (visitor *indexingDataVisitor) start() {
-	log.Info("===== Indexing STARTED =====")
+	log.Info("===== Indexing BEGIN =====")
 }
 
 func (visitor *indexingDataVisitor) end(elapsed time.Duration) {
-	log.Infof("===== Indexing COMPLETE (%v) =====", elapsed.Truncate(time.Millisecond))
+	log.Infof("===== Indexing COMPLETED (%v) =====", elapsed.Truncate(time.Millisecond))
 }
 
-func (visitor *indexingDataVisitor) startShow(show *Show) {
-	log.Infof("Indexing \"%v\" episodes", show.Title)
+func (visitor *indexingDataVisitor) startShow(show *Show) bool {
+	if !visitor.added.HasShow(show.ID) {
+		log.Infof("Skipped indexing \"%v\"", show.Title)
+		return false
+	}
+	log.Infof("Begin indexing \"%v\"", show.Title)
+	return true
 }
 
 func (visitor *indexingDataVisitor) endShow(show *Show, elapsed time.Duration) {
-	log.Infof("Indexing \"%s\" episodes DONE (%v)", show.Title, elapsed.Truncate(time.Millisecond))
+	log.Infof("Completed indexing \"%s\" (%v)", show.Title, elapsed.Truncate(time.Millisecond))
 }
 
-func (visitor *indexingDataVisitor) startFile(show *Show, file *Showfile) {
-	log.Infof("Indexing \"%v\" episode %v...", show.Title, file.Name)
+func (visitor *indexingDataVisitor) startFile(show *Show, file *Showfile) bool {
+	if !visitor.added.Has(show.ID, file.Name) {
+		log.Infof("Skipped indexing \"%v\" - %v...", show.Title, file.Name)
+		return false
+	}
+	log.Infof("Begin indexing \"%v\" - %v...", show.Title, file.Name)
+	return true
 }
 
 func (visitor *indexingDataVisitor) endFile(show *Show, file *Showfile, elapsed time.Duration) {
-	log.Infof("Indexing \"%v\" episode %s...DONE (%v)", show.Title, file.Name, elapsed.Truncate(time.Millisecond))
+	log.Infof("Completed indexing \"%v\" - %s...DONE (%v)", show.Title, file.Name, elapsed.Truncate(time.Millisecond))
 }
 
 func (visitor *indexingDataVisitor) visitRecord(show *Show, file *Showfile, record *Record) {
@@ -104,21 +116,44 @@ func (visitor *indexingDataVisitor) visitRecord(show *Show, file *Showfile, reco
 }
 
 func indexData(indexPath string, data *Data) *bleve.Index {
-	bIndex, err := bleve.Open(indexPath)
+	bleveIndexPath := filepath.Join(indexPath, "bleve")
+	bIndex, err := bleve.Open(bleveIndexPath)
 	if err == nil {
-		log.Info("Index found.")
-		return &bIndex
-	}
-	log.Info("Index not found. Will index.")
+		log.Info("Existing index found.")
+	} else {
+		log.Info("No index found.")
 
-	mapping := getNewMapping()
-	bIndex, err = bleve.New(indexPath, mapping)
+		mapping := getNewMapping()
+		bIndex, err = bleve.New(bleveIndexPath, mapping)
+		if err != nil {
+			log.Error(err)
+			os.Exit(1)
+		}
+	}
+
+	indexInfoPath := filepath.Join(indexPath, "info.json")
+	existingInfo, err := LoadFromFile(indexInfoPath)
+	if err == nil {
+		log.Info("Existing index info found.")
+	} else {
+		log.Info("No index info found.")
+		existingInfo = NewIndexInfo()
+	}
+	dataInfo := TransformToIndexInfo(data)
+	added, removed := existingInfo.Compare(dataInfo)
+	log.Info("existing: ", existingInfo)
+	log.Info("data: ", dataInfo)
+	log.Info("added: ", added)
+	log.Info("removed: ", removed)
+
+	data.Visit(&indexingDataVisitor{&bIndex, added})
+	err = dataInfo.SaveToFile(indexInfoPath)
 	if err != nil {
-		log.Error(err)
-		os.Exit(1)
+		log.Warn("Failed to save/update index info file.")
+	} else {
+		log.Info("Index info file updated.")
 	}
 
-	data.Visit(&indexingDataVisitor{&bIndex})
 	return &bIndex
 }
 
