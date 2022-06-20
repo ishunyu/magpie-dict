@@ -110,11 +110,11 @@ type indexManifestDataVisitor struct {
 	manifest *IndexManifest
 }
 
-func (visitor *indexManifestDataVisitor) start()                                                    {}
-func (visitor *indexManifestDataVisitor) end(elapsed time.Duration)                                 {}
-func (visitor *indexManifestDataVisitor) endShow(show *Show, elapsed time.Duration)                 {}
-func (visitor *indexManifestDataVisitor) visitRecord(show *Show, file *Showfile, record *Record)    {}
-func (visitor *indexManifestDataVisitor) endFile(show *Show, file *Showfile, elapsed time.Duration) {}
+func (visitor *indexManifestDataVisitor) start()                                                 {}
+func (visitor *indexManifestDataVisitor) end(start time.Time)                                    {}
+func (visitor *indexManifestDataVisitor) endShow(show *Show, start time.Time)                    {}
+func (visitor *indexManifestDataVisitor) visitRecord(show *Show, file *Showfile, record *Record) {}
+func (visitor *indexManifestDataVisitor) endFile(show *Show, file *Showfile, start time.Time)    {}
 
 func (visitor *indexManifestDataVisitor) startShow(show *Show) bool {
 	return true

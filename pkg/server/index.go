@@ -74,14 +74,15 @@ func (msg message) Type() string {
 type indexingDataVisitor struct {
 	bIndex *bleve.Index
 	added  *IndexManifest
+	bBatch *bleve.Batch
 }
 
 func (visitor *indexingDataVisitor) start() {
 	log.Info("===== Indexing BEGIN =====")
 }
 
-func (visitor *indexingDataVisitor) end(elapsed time.Duration) {
-	log.Infof("===== Indexing COMPLETED (%v) =====", elapsed.Truncate(time.Millisecond))
+func (visitor *indexingDataVisitor) end(start time.Time) {
+	log.Infof("===== Indexing COMPLETED (%v) =====", time.Since(start).Truncate(time.Millisecond))
 }
 
 func (visitor *indexingDataVisitor) startShow(show *Show) bool {
@@ -93,8 +94,8 @@ func (visitor *indexingDataVisitor) startShow(show *Show) bool {
 	return true
 }
 
-func (visitor *indexingDataVisitor) endShow(show *Show, elapsed time.Duration) {
-	log.Infof("Completed indexing \"%s\" (%v)", show.Title, elapsed.Truncate(time.Millisecond))
+func (visitor *indexingDataVisitor) endShow(show *Show, start time.Time) {
+	log.Infof("Completed indexing \"%s\" (%v)", show.Title, time.Since(start).Truncate(time.Millisecond))
 }
 
 func (visitor *indexingDataVisitor) startFile(show *Show, file *Showfile) bool {
@@ -103,16 +104,24 @@ func (visitor *indexingDataVisitor) startFile(show *Show, file *Showfile) bool {
 		return false
 	}
 	log.Infof("Begin indexing \"%v\" - %v...", show.Title, file.Name)
+	if visitor.bBatch != nil {
+		log.Error("Batch should be null.")
+		os.Exit(1)
+	}
+
+	visitor.bBatch = (*visitor.bIndex).NewBatch()
 	return true
 }
 
-func (visitor *indexingDataVisitor) endFile(show *Show, file *Showfile, elapsed time.Duration) {
-	log.Infof("Completed indexing \"%v\" - %s...DONE (%v)", show.Title, file.Name, elapsed.Truncate(time.Millisecond))
+func (visitor *indexingDataVisitor) endFile(show *Show, file *Showfile, start time.Time) {
+	(*visitor.bIndex).Batch(visitor.bBatch)
+	visitor.bBatch = nil
+	log.Infof("Completed indexing \"%v\" - %s...DONE (%v)", show.Title, file.Name, time.Since(start).Truncate(time.Millisecond))
 }
 
 func (visitor *indexingDataVisitor) visitRecord(show *Show, file *Showfile, record *Record) {
 	bMessage := message{record.ID, show.ID, record.A.Text, record.B.Text}
-	(*visitor.bIndex).Index(bMessage.ID, bMessage)
+	(*visitor.bBatch).Index(bMessage.ID, bMessage)
 }
 
 func indexData(indexPath string, data *Data) *bleve.Index {
@@ -150,12 +159,15 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 	log.Info("added: ", added)
 	log.Info("removed: ", removed)
 
-	data.Visit(&indexingDataVisitor{&bIndex, added})
-	err = newManifest.SaveToFile(indexManifestPath)
-	if err != nil {
-		log.Warn("Failed to save/update index manifest file.")
-	} else {
-		log.Info("Index manifest file updated.")
+	data.Visit(&indexingDataVisitor{&bIndex, added, nil})
+
+	if len(added.Shows) != 0 || len(removed.Shows) != 0 {
+		err = newManifest.SaveToFile(indexManifestPath)
+		if err != nil {
+			log.Warn("Failed to save/update index manifest file.")
+		} else {
+			log.Info("Index manifest file updated.")
+		}
 	}
 
 	return &bIndex
