@@ -30,6 +30,6 @@ func TestGetIndex(t *testing.T) {
 
 	var result = *results[0]
 	if result.showID != "testshow" || result.filename != "01" || result.subID != 0 {
-		t.Fatalf("result: %s", result.getID())
+		t.Fatalf("result: %v", result)
 	}
 }
