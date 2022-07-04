@@ -9,7 +9,7 @@ bin
 *.dylib
 *__debug_bin
 
-# Test binary, built with `go test -c`
+# Test binary, built with `go testshow -c`
 *.test
 
 tmp

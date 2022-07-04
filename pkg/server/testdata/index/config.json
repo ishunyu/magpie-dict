@@ -1,0 +1,10 @@
+{
+  "hostname": "localhost",
+  "port": 9999,
+  "rootPath": "/Users/shun/code/magpie-dict",
+  "indexPath": "/Users/shun/code/magpie-dict/tmp/index1",
+  "dataPath": "/Users/shun/code/magpie-dict/tmp/data1",
+  "tmpPath": "/tmp/magpie-dict",
+  "comparePath": "/Users/shun/code/CompareSBV/src/compare.py",
+  "compareVenvPath": "/Users/shun/venv/comparesbv/bin/activate"
+}

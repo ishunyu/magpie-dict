@@ -126,6 +126,10 @@ func getRecords(fileCSV string, showID string, filename string) []Record {
 	return records
 }
 
+func (rid *recordID) getID() string {
+	return fmt.Sprintf("%s.%s.%d", rid.showID, rid.filename, rid.subID)
+}
+
 func parseRecordID(s string) *recordID {
 	filenameStartIndex := strings.Index(s, ".")
 	filenameEndIndex := strings.LastIndex(s, ".")
