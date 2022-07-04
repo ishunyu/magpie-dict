@@ -116,14 +116,18 @@ func getRecords(fileCSV string, showID string, filename string) []Record {
 	recordsData, _ := data.ReadAll()
 	records := make([]Record, len(recordsData))
 	for i, d := range recordsData {
-		id := fmt.Sprintf("%s.%s.%d", showID, filename, i)
+		id := &recordID{showID, filename, i}
 		a := Line{d[0], d[1], d[2]}
 		b := Line{d[3], d[4], d[5]}
-		r := Record{id, a, b}
+		r := Record{id.String(), a, b}
 
 		records[i] = r
 	}
 	return records
+}
+
+func (rid *recordID) String() string {
+	return fmt.Sprintf("%s.%s.%d", rid.showID, rid.filename, rid.subID)
 }
 
 func parseRecordID(s string) *recordID {

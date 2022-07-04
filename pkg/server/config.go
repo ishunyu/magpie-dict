@@ -42,10 +42,6 @@ func GetConfig() *Config {
 	return &config
 }
 
-func (config *Config) GetDataPath() string {
-	return filepath.Join(config.RootPath, "resource", "data")
-}
-
 func (config *Config) GetHtmlDir() string {
 	return filepath.Join(config.RootPath, "static")
 }
