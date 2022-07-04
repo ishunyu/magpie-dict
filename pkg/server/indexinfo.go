@@ -69,11 +69,11 @@ func (manifest *IndexManifest) SaveToFile(filePath string) error {
 	return JsonWriteToFile(filePath, manifest)
 }
 
-func (from *IndexManifest) Compare(to *IndexManifest) (added, removed *IndexManifest) {
+func (manifest *IndexManifest) Compare(to *IndexManifest) (added, removed *IndexManifest) {
 	added = NewIndexManifest()
 	removed = NewIndexManifest()
 
-	for showName, show := range from.Shows {
+	for showName, show := range manifest.Shows {
 		for fileName := range show.Files {
 			if !to.Has(showName, fileName) {
 				removed.Add(showName, fileName)
@@ -83,7 +83,7 @@ func (from *IndexManifest) Compare(to *IndexManifest) (added, removed *IndexMani
 
 	for showName, show := range to.Shows {
 		for fileName := range show.Files {
-			if !from.Has(showName, fileName) {
+			if !manifest.Has(showName, fileName) {
 				added.Add(showName, fileName)
 			}
 		}
