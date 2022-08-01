@@ -24,8 +24,4 @@ bin/server config/local.json
 Starting the server for the first time may take a while as it's indexing everything. Subsequent restart should be faster.
 
 If reindexing is necessary, simply delete `indexPath` directory.
-
-## Development
-```
-go run pkg/server/*.go config/local.json
 ```
