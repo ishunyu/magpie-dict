@@ -93,7 +93,7 @@ func (manifest *IndexManifest) Compare(to *IndexManifest) (added, removed *Index
 }
 
 func (manifest *IndexManifest) String() string {
-	byte, err := json.MarshalIndent(manifest, "", "  ")
+	byte, err := json.Marshal(manifest)
 	if err != nil {
 		return err.Error()
 	}

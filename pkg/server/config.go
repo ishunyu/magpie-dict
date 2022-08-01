@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 // Config used for storing app configuration
 type Config struct {
 	Hostname        string `json:"hostname"`
 	Port            int    `json:"port"`
-	RootPath        string `json:"rootPath"`
-	IndexPath       string `json:"indexPath"`
+	LoggingPath     string `json:"loggingPath"`
+	HtmlPath        string `json:"htmlPath"`
 	DataPath        string `json:"dataPath"`
-	TempPath        string `json:"tmpPath"`
+	IndexPath       string `json:"indexPath"`
 	ComparePath     string `json:"comparePath"`
 	CompareVenvPath string `json:"compareVenvPath"`
+	TmpPath         string `json:"tmpPath"`
 }
 
 // GetConfig returns config data based in json
@@ -40,15 +40,4 @@ func GetConfig() *Config {
 	fmt.Printf("Config loaded: %s\n", string(configStr))
 
 	return &config
-}
-
-func (config *Config) GetHtmlDir() string {
-	return filepath.Join(config.RootPath, "static")
-}
-
-func (config *Config) GetPort() int {
-	if config.Port == 0 {
-		return 8090
-	}
-	return config.Port
 }
