@@ -26,23 +26,30 @@ func RequestLogger() *log.Logger {
 	return requestLog
 }
 
-func SetupLogger(config *Config) {
-	fmt.Println("Setting up loggers")
+func SetupLogger(loggingPath string) error {
+	fmt.Println("Configuring logging")
+	err := os.MkdirAll(loggingPath, 0700)
+	if err != nil {
+		return err
+	}
+
 	log.SetFormatter(new(Formatter))
 	log.SetReportCaller(true)
 
-	SetupRequestLogger(config)
-	log.Info("Logger setup complete")
+	SetupRequestLogger(loggingPath)
+	log.Info("Logging configured")
+
+	return nil
 }
 
-func SetupRequestLogger(config *Config) {
+func SetupRequestLogger(loggingPath string) {
 	if requestLog != nil {
 		return
 	}
 
 	requestLog = log.New()
 
-	path := filepath.Join(config.TempPath, LOG_REQUESTS)
+	path := filepath.Join(loggingPath, LOG_REQUESTS)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("Problem trying to open %s for logging.\n", path)

@@ -41,8 +41,7 @@ func JsonLoadFromFile(filePath string, v interface{}) error {
 		return err
 	}
 
-	json.Unmarshal(bytes, v)
-	return nil
+	return json.Unmarshal(bytes, v)
 }
 
 func JsonWriteToFile(filePath string, v interface{}) error {

@@ -101,7 +101,7 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index, stats 
 	searchResults = searchResults[0:Min(len(searchResults), 10)]
 	response := searchResponse{make([]*searchResponseData, len(searchResults))}
 	for i, result := range searchResults {
-		response.Data[i] = retreiveResponse(&index.Data, result)
+		response.Data[i] = retreiveResponse(index.Data, result)
 	}
 
 	data, _ := json.Marshal(response)
@@ -139,24 +139,21 @@ func handleSubs(w http.ResponseWriter, req *http.Request, index *Index, stats *R
 func handleCompare(
 	w http.ResponseWriter,
 	req *http.Request,
-	tmpDir string,
+	tmpPath string,
 	comparePath string,
 	compareVenvPath string,
 	stats *RequestStats) {
 
 	logger := log.WithField(KEY_REQUEST_ID, stats.RequestID())
 
-	compareDir := filepath.Join(tmpDir, "compare")
-	os.MkdirAll(compareDir, 0700)
-	ms := time.Now().UnixNano() / int64(time.Millisecond)
-	dir, _ := ioutil.TempDir(compareDir, strconv.FormatInt(ms, 10)+"_")
+	dir := getCompareTmpPath(tmpPath)
 	defer os.RemoveAll(dir)
 
 	stats.Add("dir", dir)
 
-	chinese_file := getAndSaveFile(req, "CHINESE_FILE", dir, "chinese_file.sbv", logger)
-	original_file := getAndSaveFile(req, "ORIGINAL_FILE", dir, "original_file.sbv", logger)
-	revised_file := getAndSaveFile(req, "REVISED_FILE", dir, "revised_file.sbv", logger)
+	chinese_file := saveFileFromRequest(req, "CHINESE_FILE", dir, "chinese_file.sbv", logger)
+	original_file := saveFileFromRequest(req, "ORIGINAL_FILE", dir, "original_file.sbv", logger)
+	revised_file := saveFileFromRequest(req, "REVISED_FILE", dir, "revised_file.sbv", logger)
 
 	if original_file == "" || revised_file == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -190,7 +187,15 @@ func handleCompare(
 	w.Write(bytes)
 }
 
-func getAndSaveFile(req *http.Request, key string, dir string, filename string, logger *log.Entry) string {
+func getCompareTmpPath(tmpPath string) string {
+	compareTmpPath := filepath.Join(tmpPath, "compare")
+	os.MkdirAll(compareTmpPath, 0700)
+	ms := time.Now().UnixNano() / int64(time.Millisecond)
+	dir, _ := ioutil.TempDir(compareTmpPath, strconv.FormatInt(ms, 10)+"_")
+	return dir
+}
+
+func saveFileFromRequest(req *http.Request, key string, dir string, filename string, logger *log.Entry) string {
 	formFile, _, err := req.FormFile(key)
 	if err != nil {
 		logger.Warn(err, " (", filename, ")")
