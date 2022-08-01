@@ -33,6 +33,7 @@ func SetupLogger(loggingPath string) error {
 		return err
 	}
 
+	log.SetOutput(os.Stdout)
 	log.SetFormatter(new(Formatter))
 	log.SetReportCaller(true)
 
