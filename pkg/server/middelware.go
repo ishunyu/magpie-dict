@@ -22,8 +22,13 @@ func RequestLogHandler(f HandlerFunc) http.HandlerFunc {
 		f(w, req, stats)
 		duration := time.Since(timeStart)
 
+		client_ip := req.Header.Get("X-Real-IP")
+		if len(client_ip) == 0 {
+			client_ip = req.RemoteAddr
+		}
+
 		fields := log.Fields{
-			"client_ip": req.RemoteAddr,
+			"client_ip": client_ip,
 			"endpoint":  req.URL.Path,
 			"duration":  duration.Milliseconds(),
 		}
