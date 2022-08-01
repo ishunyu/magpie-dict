@@ -51,9 +51,13 @@ type manifest struct {
 	Title string `json:"title"`
 }
 
-func GetData(dataPath string) Data {
+func getData(dataPath string) (*Data, error) {
 	shows := make(map[string]Show)
-	filepath.Walk(dataPath, func(showPath string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(dataPath, func(showPath string, info os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if showPath == dataPath || !info.IsDir() || filepath.Dir(showPath) != dataPath {
 			return nil
 		}
@@ -62,7 +66,12 @@ func GetData(dataPath string) Data {
 		shows[show.ID] = show
 		return nil
 	})
-	return Data{shows}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Data{shows}, nil
 }
 
 func getShow(showPath string) Show {

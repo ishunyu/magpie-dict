@@ -19,10 +19,23 @@ function upload(button) {
         return response.blob()
     })
     .then(blob => {
-        download(blob, "output.xlsx")
+        download(blob, getNameForFile("output", "xlsx"))
     })
     .catch(err => messagesDiv.innerHTML = err)
     .finally(() => button.disabled = false);
+}
+
+function getNameForFile(prefix, extension) {
+    d = new Date()
+    filename = [
+        d.getFullYear(),
+        pad(d.getMonth()+1, 2, '0'),
+        pad(d.getDate(), 2, '0'),
+        pad(d.getHours(), 2, '0'),
+        pad(d.getMinutes(), 2, '0'),
+        pad(d.getSeconds(), 2, '0')
+    ].join('-')
+    return prefix + "_" + filename + "." + extension
 }
 
 function download(blob, filename) {
@@ -38,3 +51,9 @@ function download(blob, filename) {
     a.remove();
     window.URL.revokeObjectURL(url);
   }
+
+  function pad(num, padlen, padchar) {
+    var pad_char = typeof padchar !== 'undefined' ? padchar : '0';
+    var pad = new Array(1 + padlen).join(pad_char);
+    return (pad + num).slice(-pad.length);
+}

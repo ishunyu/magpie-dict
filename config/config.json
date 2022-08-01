@@ -2,10 +2,10 @@
     "comment": "This is a template for configuration files. Please make a copy of this file and pass it into the program `go run src/server.go config/local.json`",
     "hostname": "",
     "port": 8090,
-    "rootPath": "Project root path",
-    "indexPath": "Cached index path",
+    "loggingPath": "Logging path",
+    "htmlPath": "HTML files path",
     "dataPath": "Data path",
-    "tmpPath": "Temperary path",
+    "indexPath": "Cached index path",
     "comparePath": "Compare python script path",
     "compareVenvPath": "Venv activation path"
 }

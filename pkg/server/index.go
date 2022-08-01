@@ -15,14 +15,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func GetIndex(config *Config) *Index {
-	data := GetData(config.DataPath)
-	index := indexData(config.IndexPath, &data)
-	return &Index{data, index}
+func NewIndex(dataPath string, indexPath string) (*Index, error) {
+	data, err := getData(dataPath)
+	if err != nil {
+		return nil, err
+	}
+
+	index, err := indexData(indexPath, data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Index{data, index}, nil
 }
 
 type Index struct {
-	Data   Data
+	Data   *Data
 	BIndex *bleve.Index
 }
 
@@ -124,7 +132,7 @@ func (visitor *indexingDataVisitor) visitRecord(show *Show, file *Showfile, reco
 	(*visitor.bBatch).Index(bMessage.ID, bMessage)
 }
 
-func indexData(indexPath string, data *Data) *bleve.Index {
+func indexData(indexPath string, data *Data) (*bleve.Index, error) {
 	indexManifestPath := filepath.Join(indexPath, "manifest.json")
 	bleveIndexPath := filepath.Join(indexPath, "bleve")
 
@@ -148,7 +156,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 		bIndex, err = bleve.New(bleveIndexPath, mapping)
 		if err != nil {
 			log.Error(err)
-			os.Exit(1)
+			return nil, err
 		}
 	}
 
@@ -170,7 +178,7 @@ func indexData(indexPath string, data *Data) *bleve.Index {
 		}
 	}
 
-	return &bIndex
+	return &bIndex, nil
 }
 
 func getNewMapping() *mapping.IndexMappingImpl {
