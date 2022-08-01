@@ -101,7 +101,7 @@ func handleSearch(w http.ResponseWriter, req *http.Request, index *Index, stats 
 	searchResults = searchResults[0:Min(len(searchResults), 10)]
 	response := searchResponse{make([]*searchResponseData, len(searchResults))}
 	for i, result := range searchResults {
-		response.Data[i] = retreiveResponse(&index.Data, result)
+		response.Data[i] = retreiveResponse(index.Data, result)
 	}
 
 	data, _ := json.Marshal(response)
