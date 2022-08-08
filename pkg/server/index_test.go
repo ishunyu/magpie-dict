@@ -1,19 +1,24 @@
 package main
 
 import (
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 type TestPaths struct {
-	dataPath  string
-	tmpPath   string
-	indexPath string
+	rootPath   string
+	dataPath   string
+	tmpPath    string
+	indexPath  string
+	backupPath string
 }
 
 func TestBadPaths(t *testing.T) {
-	tPaths := testPaths(t, "bad_paths")
+	tPaths := newTestPaths(t, "bad_paths")
 	_, err := NewIndex(tPaths.dataPath, tPaths.indexPath)
 	if err == nil {
 		t.Fatalf("Expected error.")
@@ -23,7 +28,7 @@ func TestBadPaths(t *testing.T) {
 
 func TestWithoutCacheWithoutManifest(t *testing.T) {
 	testPath := "without_cache_without_manifest"
-	tPaths := testPaths(t, testPath)
+	tPaths := newTestPaths(t, testPath)
 	clean(t, tPaths)
 	defer clean(t, tPaths)
 
@@ -32,7 +37,7 @@ func TestWithoutCacheWithoutManifest(t *testing.T) {
 
 func TestWithoutCacheWithManifest(t *testing.T) {
 	testPath := "without_cache_with_manifest"
-	tPaths := testPaths(t, testPath)
+	tPaths := newTestPaths(t, testPath)
 	cleanCache(t, tPaths)
 	defer cleanCache(t, tPaths)
 
@@ -40,7 +45,9 @@ func TestWithoutCacheWithManifest(t *testing.T) {
 }
 
 func TestWithCacheWithoutManifest(t *testing.T) {
-	tPaths := testPaths(t, "with_cache_without_manifest")
+	tPaths := newTestPaths(t, "with_cache_without_manifest")
+	backup(t, tPaths)
+	defer restore(t, tPaths)
 	cleanManifest(t, tPaths)
 	defer cleanManifest(t, tPaths)
 
@@ -49,7 +56,9 @@ func TestWithCacheWithoutManifest(t *testing.T) {
 
 func TestWithCacheWithManifest(t *testing.T) {
 	testPath := "with_cache_with_manifest"
-	tPaths := testPaths(t, testPath)
+	tPaths := newTestPaths(t, testPath)
+	backup(t, tPaths)
+	defer restore(t, tPaths)
 
 	doTest(t, tPaths)
 }
@@ -71,7 +80,7 @@ func doTest(t *testing.T, tPaths TestPaths) {
 	}
 }
 
-func testPaths(t *testing.T, testPathSub string) TestPaths {
+func newTestPaths(t *testing.T, testPathSub string) TestPaths {
 	testPath := filepath.Join("testdata", "index", testPathSub)
 	testPathAbs, err := filepath.Abs(testPath)
 	if err != nil {
@@ -79,9 +88,37 @@ func testPaths(t *testing.T, testPathSub string) TestPaths {
 	}
 
 	return TestPaths{
+		testPathAbs,
 		filepath.Join(testPathAbs, "data"),
-		filepath.Join(testPath, "tmp"),
+		filepath.Join(testPathAbs, "tmp"),
 		filepath.Join(testPathAbs, "tmp", "index"),
+		filepath.Join(testPathAbs, "bak"),
+	}
+}
+
+func backup(t *testing.T, tPaths TestPaths) {
+	err := os.Mkdir(tPaths.backupPath, fs.ModeDir|0744)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output, err := execShell("cp", "-r", tPaths.tmpPath, tPaths.backupPath)
+	if err != nil {
+		t.Fatal(err, output)
+	}
+}
+
+func restore(t *testing.T, tPaths TestPaths) {
+	clean(t, tPaths)
+
+	output, err := execShell("mv", tPaths.backupPath+"/*", tPaths.rootPath)
+	if err != nil {
+		t.Fatal(err, string(output))
+	}
+
+	err = removeDir(tPaths.backupPath)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -89,13 +126,8 @@ func clean(t *testing.T, tPaths TestPaths) {
 	cleanCache(t, tPaths)
 	cleanManifest(t, tPaths)
 
-	err := os.RemoveAll(tPaths.tmpPath)
+	err := removeDir(tPaths.tmpPath)
 	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.Remove(tPaths.tmpPath)
-	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
 }
@@ -103,13 +135,8 @@ func clean(t *testing.T, tPaths TestPaths) {
 func cleanCache(t *testing.T, tPaths TestPaths) {
 	blevePath := filepath.Join(tPaths.indexPath, "bleve")
 
-	err := os.RemoveAll(blevePath)
+	err := removeDir(blevePath)
 	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.Remove(blevePath)
-	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
 }
@@ -120,4 +147,23 @@ func cleanManifest(t *testing.T, tPaths TestPaths) {
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
+}
+
+func removeDir(path string) error {
+	err := os.RemoveAll(path)
+	if err != nil {
+		return err
+	}
+
+	err = os.Remove(path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
+}
+
+func execShell(cmd ...string) ([]byte, error) {
+	cmdStr := strings.Join(cmd, " ")
+	return exec.Command("/bin/bash", "-c", cmdStr).CombinedOutput()
 }
