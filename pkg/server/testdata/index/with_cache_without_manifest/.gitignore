@@ -1,0 +1,7 @@
+!tmp
+
+tmp/*
+!tmp/index
+
+tmp/index/*
+!tmp/index/bleve

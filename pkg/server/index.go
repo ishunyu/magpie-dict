@@ -133,49 +133,49 @@ func (visitor *indexingDataVisitor) visitRecord(show *Show, file *Showfile, reco
 }
 
 func indexData(indexPath string, data *Data) (*bleve.Index, error) {
-	indexManifestPath := filepath.Join(indexPath, "manifest.json")
-	bleveIndexPath := filepath.Join(indexPath, "bleve")
+	manifestPath := filepath.Join(indexPath, "manifest.json")
+	blevePath := filepath.Join(indexPath, "bleve")
 
-	existingManifest, err := LoadIndexManifestFromFile(indexManifestPath)
-	if err == nil {
-		log.Info("Existing index manifest found.")
-		log.Info("existing: ", existingManifest)
-	} else {
-		log.Info("No index manifest found.")
-		os.RemoveAll(bleveIndexPath)
-		existingManifest = NewIndexManifest()
-	}
+	manifestFromFile, manifestErr := LoadIndexManifestFromFile(manifestPath)
+	bIndex, bleveErr := bleve.Open(blevePath)
 
-	bIndex, err := bleve.Open(bleveIndexPath)
-	if err == nil {
-		log.Info("Existing index found.")
-	} else {
-		log.Info("No index found.")
+	if manifestErr != nil || bleveErr != nil {
+		log.Info("Index files not complete, recreating index.")
+		if bleveErr == nil {
+			bleveCloseErr := bIndex.Close()
+			if bleveCloseErr != nil {
+				return nil, bleveCloseErr
+			}
+		}
+
+		os.RemoveAll(blevePath)
+		os.Remove(blevePath)
+		os.Remove(manifestPath)
 
 		mapping := getNewMapping()
-		bIndex, err = bleve.New(bleveIndexPath, mapping)
-		if err != nil {
-			log.Error(err)
-			return nil, err
+		bIndex, bleveErr = bleve.New(blevePath, mapping)
+		if bleveErr != nil {
+			log.Error(bleveErr)
+			return nil, bleveErr
 		}
+		manifestFromFile = NewIndexManifest()
 	}
 
-	newManifest := GetIndexManifest(data)
-	log.Info("data: ", newManifest)
+	manifestFromData := GetIndexManifest(data)
+	log.Info("manifest(data): ", manifestFromData)
 
-	added, removed := existingManifest.Compare(newManifest)
-	log.Info("added: ", added)
-	log.Info("removed: ", removed)
+	added, removed := manifestFromFile.Compare(manifestFromData)
+	log.Info("manifest(added): ", added)
+	log.Info("manifest(removed): ", removed)
 
 	data.Visit(&indexingDataVisitor{&bIndex, added, nil})
 
 	if len(added.Shows) != 0 || len(removed.Shows) != 0 {
-		err = newManifest.SaveToFile(indexManifestPath)
-		if err != nil {
-			log.Warn("Failed to save/update index manifest file.")
-		} else {
-			log.Info("Index manifest file updated.")
+		manifestSaveErr := manifestFromData.SaveToFile(manifestPath)
+		if manifestSaveErr != nil {
+			return nil, manifestSaveErr
 		}
+		log.Info("Index manifest file saved.")
 	}
 
 	return &bIndex, nil

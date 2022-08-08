@@ -13,6 +13,7 @@ bin
 *.test
 
 tmp
+bak
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
@@ -23,4 +24,3 @@ tmp
 #IDE
 .vscode
 .idea
-
