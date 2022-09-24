@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -35,7 +36,7 @@ type Index struct {
 }
 
 func (index *Index) Search(searchText string, showID string) []*recordID {
-	queryString := "*" + searchText + "*"
+	queryString := "*" + strings.ToLower(searchText) + "*"
 	wildcardQuery := bleve.NewWildcardQuery(queryString)
 
 	var newQuery query.Query
