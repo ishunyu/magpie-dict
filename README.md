@@ -1,14 +1,15 @@
-# magpie-dict
-An online Chinese-English dictionary based on the subtitle translations of shows by the The Magpie Bridge Brigade.
+# Magpie Dictionary
+An online dictionary based on the subtitle translations from the The Magpie Bridge Brigade. Built in Go.
 
 ### Requirements
 - [Go](https://golang.org/)
+- Data files
 
 ## Getting Started
 ### Configure
-Copy default config file and then replace properties suited to your environment.
+Copy the configuration template file and populate the properties
 ```
-cp config/config.json config/local.json
+mkdir tmp && cp config/template.json tmp/config.json
 ```
 
 ### Build
@@ -18,9 +19,13 @@ go build -o bin/ ./pkg/server
 
 ### Run
 ```
-bin/server config/local.json
+bin/server tmp/config.json
+```
+Or in the background
+```
+nohup bin/server tmp/config.json > tmp/server.log &
 ```
 
-Starting the server for the first time may take a while as it's indexing everything. Subsequent restart should be faster.
+- Starting the server for the first time may take a while as it's indexing everything. Subsequent restart should be faster.
 
-If reindexing is necessary, simply delete `indexPath` directory.
+- If reindexing is necessary, simply delete directory referenced by the `indexPath` configuration property.
