@@ -8,7 +8,7 @@ function upload(button) {
     formData.append("ORIGINAL_FILE", ORIGINAL_FILE.files[0]);
     formData.append("REVISED_FILE", REVISED_FILE.files[0]);
 
-    fetch('/comparefiles', {
+    fetch('./comparefiles', {
         method: "POST", 
         body: formData
     })
